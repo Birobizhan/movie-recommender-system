@@ -1,11 +1,27 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles  # 1. Импорт для раздачи картинок
+from contextlib import asynccontextmanager
 
-# Импортируем роутеры напрямую из каждого файла
+# Импортируем настройки БД (предполагаем, что они у вас в app/database.py)
+# Если файла database нет, закомментируйте эти строки пока что
+from app.database import engine, Base
+
 from app.routes.users import router as users_router
 from app.routes.movies import router as movies_router
 from app.routes.reviews import router as reviews_router
 from app.routes.lists import router as lists_router
+
+# 2. LIFESPAN (События запуска и остановки)
+# Эта функция сработает один раз при старте сервера
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Логика при запуске: Создаем таблицы в БД
+    print("🚀 Запуск сервера... Проверка таблиц БД...")
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Логика при выключении (если нужна)
+    print("🛑 Сервер останавливается")
 
 app = FastAPI(
     title="MovieHub API",
@@ -13,21 +29,31 @@ app = FastAPI(
     description="Backend API для аналога Кинопоиска/Letterboxd",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
+    openapi_url="/api/openapi.json",
+    lifespan=lifespan # Подключаем lifespan
 )
 
-# CORS
+# 3. CORS: Добавляем порты для Vite
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
+        "http://localhost:3000",      # Стандартный React
+        "http://localhost:5173",      # <--- ВАЖНО: Стандартный порт Vite
+        "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
-        "http://localhost:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 4. Подключение статики (Картинок)
+# Теперь файлы из папки "static" будут доступны по адресу /static/filename.jpg
+# Создайте папку 'static' в корне проекта, если её нет.
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except RuntimeError:
+    print("⚠️ Папка 'static' не найдена. Создайте её для хранения постеров.")
 
 # Подключаем роутеры
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
@@ -40,7 +66,7 @@ async def root():
     return {
         "message": "Добро пожаловать в MovieHub API!",
         "version": "1.0.0",
-        "docs": "/api/docs"
+        "docs_url": "http://localhost:8000/api/docs"
     }
 
 @app.get("/api/health")
@@ -49,4 +75,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    # reload=True нужен только для разработки
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

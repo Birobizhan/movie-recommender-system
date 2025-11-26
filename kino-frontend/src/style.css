@@ -1,0 +1,340 @@
+/* --- Общие стили и сброс --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* Фон изменен на темный, как на новом макете */
+    background-color: #1f1f1f;
+    color: #f0f0f0; /* Основной_цвет текста светлый */
+    min-height: 100vh;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+input {
+    font-family: inherit;
+    border: none;
+}
+
+ul {
+    list-style: none;
+}
+
+/* --- Стили Хедера (Шапки) --- */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background-color: #1f1f1f; /* Темный фон хедера */
+    color: #f0f0f0;
+    width: 100%;
+    border-bottom: 1px solid #333; /* Небольшая_граница_для_раздела */
+}
+
+header .logo {
+    padding: 8px 12px;
+    background-color: #444;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+header .search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    max-width: 500px;
+    margin: 0 24px;
+}
+
+header .search-container input {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    border-radius: 4px;
+    background-color: #D9D9D9;
+    color: #fff;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+header .search-container button {
+    position: absolute;
+    right: 8px;
+    color: #aaa;
+    font-size: 1.1rem;
+}
+
+header nav {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+}
+
+header nav a {
+    font-weight: 500;
+    font-size: 1.5rem;
+}
+
+header nav .profile-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+header nav .profile-icon {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #666;
+}
+
+/* Новые стили для стрелки_дропдауна */
+header nav .profile-link.logged-in .dropdown-arrow {
+    font-size: 0.7rem;
+    color: #aaa;
+}
+
+
+/* === СТИЛИ СТРАНИЦЫ ВХОДА (из прошлого) === */
+/* Обертка main_для_центрирования_формы */
+main.login-page-main {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 440px;
+    background: #ffffff;
+    color: #111; /* Текст внутри белого_блока_темный */
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
+    text-align: center;
+}
+/* ... (все_остальные_стили_для .login-container, .form-group и т.д. остаются здесь) ... */
+
+
+/* === НОВЫЕ СТИЛИ ДЛЯ СТРАНИЦЫ СПИСКА ФИЛЬМОВ === */
+.page-container {
+    width: 100%;
+    max-width: 1280px; /* Широкий контейнер */
+    margin: 32px auto; /* Отступы сверху/снизу и_центрирование */
+    padding: 40px;
+    background: #ffffff;
+    color: #111; /* Текст внутри этого_блока_делаем_темным */
+    border-radius: 16px;
+    display: flex;
+    gap: 32px; /* Пробел между колонками */
+}
+
+.main-content {
+    flex: 3; /* Основная колонка_занимает 3/4 */
+}
+
+.sidebar {
+    flex: 1; /* Сайдбар_занимает 1/4 */
+    min-width: 280px; /* Минимальная ширина */
+}
+
+/* --- Стили основной колонки --- */
+.top-movies h1 {
+    font-size: 2.5rem; /* 40px */
+    font-weight: 600;
+}
+
+.top-movies .subtitle {
+    font-size: 1rem;
+    color: #666;
+    margin-top: 8px;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 0;
+    margin: 24px 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+}
+
+.filters span {
+    color: #555;
+}
+
+.filters a {
+    font-weight: 500;
+    color: #333;
+}
+.filters a:hover {
+    color: #000;
+}
+
+/* --- Стили списка фильмов --- */
+.movie-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.movie-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.movie-item:last-child {
+    border-bottom: none;
+}
+
+.movie-item .rank {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #777;
+    width: 32px;
+    text-align: left;
+    padding-top: 8px;
+}
+
+.movie-item .poster-placeholder {
+    width: 60px;
+    height: 90px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.movie-item .details {
+    flex-grow: 1;
+}
+
+.movie-item .details h4 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.movie-item .details .meta {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.movie-item .details .crew,
+.movie-item .details .cast {
+    font-size: 0.85rem;
+    color: #333;
+    margin-top: 6px;
+}
+
+.movie-item .rating {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-top: 8px;
+}
+
+.movie-item .rating .rating-value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2e7d32; /* Зеленый_рейтинг */
+}
+
+.movie-item .rating .votes {
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.movie-item .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-left: 24px;
+    padding-top: 8px;
+}
+
+.movie-item .actions .btn-watch-later {
+    background-color: #f4f4f5;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+}
+.movie-item .actions .btn-watch-later:hover {
+    background-color: #e0e0e0;
+}
+
+.movie-item .actions .icon {
+    font-size: 1.3rem;
+    color: #888;
+    cursor: pointer;
+}
+
+/* --- Стили Сайдбара --- */
+.sidebar h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.sidebar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sidebar-item {
+    display: flex;
+    gap: 12px;
+}
+
+.sidebar-item .sidebar-details {
+    flex-grow: 1;
+}
+
+.sidebar-item .sidebar-details h5 {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.sidebar-item .sidebar-details p {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+.sidebar-item .sidebar-poster {
+    width: 50px;
+    height: 75px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.bi-search{
+    color: #1f1f1f;
+}
