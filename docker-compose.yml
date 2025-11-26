@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      # Сохранение данных между перезапусками
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      # Переменные для инициализации БД (берутся из .env)
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      # Маппинг порта (опционально, для доступа с хоста)
+      - "5432:5432"
+
+  # ----------------------------------------------------
+  # 2. FastAPI Backend Service
+  # ----------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      # Маппинг кода для горячей перезагрузки (только для разработки)
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      # Переменные для подключения к БД (имя хоста - это имя сервиса 'db')
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+    depends_on:
+      # Зависимость: бэкенд должен запуститься после БД
+      - db
+    # Запуск миграций Alembic перед стартом приложения
+    # entrypoint: ["/bin/sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+
+  # ----------------------------------------------------
+  # 3. React Frontend Service
+  # ----------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      # Маппинг кода и исключение node_modules
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      # Указываем, куда React должен обращаться за API
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+# ----------------------------------------------------
+# 4. Volumes (Для сохранения данных БД)
+# ----------------------------------------------------
+volumes:
+  postgres_data:

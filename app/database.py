@@ -1,16 +1,24 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from environs import Env
+from typing import Generator
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./moviehub.db"
+env = Env()
+env.read_env()
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+SQLALCHEMY_DATABASE_URL = env.str('DATABASE_URL')
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+# Создание фабрики сессий
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-def get_db():
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db() -> Generator:
     db = SessionLocal()
     try:
         yield db
