@@ -44,9 +44,7 @@ class Movie(Base):
     # similarMovies: Mapped[list["Movie"]] = relationship(
     #     secondary=movie_similarities,
     #     primaryjoin=id == movie_similarities.c.movie_id,
-    #     # Условие для похожих фильмов (similar_movie_id = Movie.id)
     #     secondaryjoin=id == movie_similarities.c.similar_movie_id,
-    #     # backref позволяет получить список фильмов, которые считают текущий фильм похожим
     #     backref="is_similar_to"
     # )
     reviews = relationship("Review", back_populates="movie")

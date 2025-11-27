@@ -63,7 +63,6 @@ def create_movie(movie: MovieCreate, db: Session = Depends(get_db)):
     Проверяет, не существует ли фильм с таким же kp_id.
     """
 
-    # 1. Проверка на дубликат (по kp_id, так как он unique=True в вашей модели)
     db_movie = db.query(Movie).filter(Movie.kp_id == movie.kp_id).first()
     if db_movie:
         raise HTTPException(
@@ -71,14 +70,11 @@ def create_movie(movie: MovieCreate, db: Session = Depends(get_db)):
             detail="Movie with this Kinopoisk ID already exists"
         )
 
-    # 2. Создание объекта модели SQLAlchemy
-    # Используем оператор **movie.model_dump() для преобразования Pydantic в dict
     db_movie = Movie(**movie.model_dump())
 
-    # 3. Добавление в сессию и коммит
     db.add(db_movie)
     db.commit()
-    db.refresh(db_movie)  # Обновляем объект, чтобы получить ID, сгенерированный БД
+    db.refresh(db_movie)
 
     return db_movie
 

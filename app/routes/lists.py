@@ -20,7 +20,6 @@ def create_list(
 ):
     user = db.query(User).filter(User.username == current_user).first()
     
-    # Создаем список
     db_list = MovieList(
         title=list_data.title,
         description=list_data.description,
@@ -31,7 +30,6 @@ def create_list(
     db.commit()
     db.refresh(db_list)
     
-    # Добавляем фильмы, если указаны
     if list_data.movie_ids:
         for movie_id in list_data.movie_ids:
             movie = db.query(Movie).filter(Movie.id == movie_id).first()
@@ -41,12 +39,10 @@ def create_list(
         db.commit()
         db.refresh(db_list)
     
-    # Добавляем количество фильмов
     db_list.movie_count = len(db_list.movies)
     
     return db_list
 
-# Создаем кастомную схему ответа для списка с фильмами
 class MovieListWithMoviesResponse(MovieListResponse):
     movies: List[MovieResponse]
 
@@ -56,10 +52,8 @@ def get_list(list_id: int, db: Session = Depends(get_db)):
     if not db_list:
         raise HTTPException(status_code=404, detail="List not found")
     
-    # Добавляем количество фильмов
     db_list.movie_count = len(db_list.movies)
     
-    # Возвращаем список с фильмами
     return {
         "id": db_list.id,
         "title": db_list.title,
@@ -99,7 +93,6 @@ def update_list(
     db.commit()
     db.refresh(db_list)
     
-    # Добавляем количество фильмов
     db_list.movie_count = len(db_list.movies)
     
     return db_list
@@ -145,7 +138,6 @@ def add_movies_to_list(
             detail="Not enough permissions"
         )
     
-    # Добавляем фильмы
     for movie_id in data.movie_ids:
         movie = db.query(Movie).filter(Movie.id == movie_id).first()
         if movie and movie not in db_list.movies:
@@ -154,7 +146,6 @@ def add_movies_to_list(
     db.commit()
     db.refresh(db_list)
     
-    # Добавляем количество фильмов
     db_list.movie_count = len(db_list.movies)
     
     return db_list
@@ -178,7 +169,6 @@ def remove_movies_from_list(
             detail="Not enough permissions"
         )
     
-    # Удаляем фильмы
     for movie_id in data.movie_ids:
         movie = db.query(Movie).filter(Movie.id == movie_id).first()
         if movie and movie in db_list.movies:
@@ -187,7 +177,6 @@ def remove_movies_from_list(
     db.commit()
     db.refresh(db_list)
     
-    # Добавляем количество фильмов
     db_list.movie_count = len(db_list.movies)
     
     return db_list
@@ -196,7 +185,6 @@ def remove_movies_from_list(
 def get_user_lists(user_id: int, db: Session = Depends(get_db)):
     lists = db.query(MovieList).filter(MovieList.owner_id == user_id).all()
     
-    # Добавляем количество фильмов для каждого списка
     for movie_list in lists:
         movie_list.movie_count = len(movie_list.movies)
     
