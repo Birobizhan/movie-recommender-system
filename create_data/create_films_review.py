@@ -7,13 +7,11 @@ import csv
 from openai.types.chat import ChatCompletion
 from typing import Callable, TypeVar, List, Tuple
 
-# --- Настройка логирования (Остается без изменений) ---
 logging.basicConfig(level=logging.INFO, filename="create_films_review_log.log", filemode="a",
                     format="%(asctime)s %(levelname)s %(message)s")
 T = TypeVar('T')
 
 
-# --- Декоратор Retry (Остается без изменений, он хорош) ---
 class Retry:
     def __init__(self, max_retries: int):
         if max_retries < 1:
@@ -48,7 +46,6 @@ class Retry:
         return wrapper
 
 
-# --- Класс prompter (Остается для сохранения структуры) ---
 class prompter:
     def __init__(self, client: OpenAI):
         self.client = client
@@ -61,15 +58,11 @@ class prompter:
         return response
 
 
-# --- НОВАЯ ФУНКЦИЯ: Работа с CSV (более надежная) ---
 def add_to_csv_file_safe(result_data: List[str], part_title: str, information_ans: str) -> bool:
     """
     Проверяет совпадение заголовков и записывает данные в CSV файл,
     используя модуль csv.
     """
-    # result_data[0] - это название фильма из ответа
-    # result_data[1] - это жанр
-
     # Сравнение названий
     title_from_response = result_data[0].strip()
     title_from_request = part_title.strip()
@@ -82,12 +75,9 @@ def add_to_csv_file_safe(result_data: List[str], part_title: str, information_an
     if title_from_response == title_from_request:
         genre = result_data[1]
 
-        # Запись данных в CSV
-        # 'a' - режим добавления, newline='' важен для кросс-платформенной работы с CSV
         try:
             with open(f'genre_csv/{genre}.csv', 'a', encoding='utf-8', newline='') as file_add:
                 writer = csv.writer(file_add)
-                # Записываем все элементы списка result_data
                 writer.writerow(result_data)
 
             with open('count.txt', 'a', encoding='utf-8') as file_add:
@@ -99,7 +89,6 @@ def add_to_csv_file_safe(result_data: List[str], part_title: str, information_an
             logging.error(f'Ошибка при записи в CSV: {e}', exc_info=True)
             return False
     else:
-        # Логирование различий, если они есть
         for i in range(min(len(title_from_response), len(title_from_request))):
             if title_from_response[i] != title_from_request[i]:
                 logging.info(f"Различие в позиции {i}: '{title_from_response[i]}' vs '{title_from_request[i]}'")
@@ -108,70 +97,46 @@ def add_to_csv_file_safe(result_data: List[str], part_title: str, information_an
 
 @Retry(max_retries=2)
 def process(film: str, prompt_template: str) -> List[str]:
-    """
-    Обрабатывает один фильм: форматирует промпт, вызывает API, парсит ответ и сохраняет.
 
-    :param film: Название фильма для обработки.
-    :param prompt_template: Загруженный шаблон промпта.
-    :return: Список данных, полученных из ответа API.
-    """
-    # 1. Форматирование промпта в памяти (Оптимизация I/O)
     film_title = film.strip()
     request_prompt = prompt_template.format(title=film_title)
 
-    # 2. Вызов API
     answer = client_user.prompt(request_prompt)
 
-    # 3. Парсинг ответа
-    # Предполагаем, что вторая строка содержит данные: Название,Жанр,Обзор...
     try:
         information_ans = answer.choices[0].message.content.split('\n')[1]
     except IndexError:
-        # Если ответ короче, чем ожидалось (например, только одна строка)
         information_ans = answer.choices[0].message.content
 
-    # Парсинг CSV-подобной строки
-    # Используем re.split(r',(?=\S)', ...) для разделения по запятой,
-    # за которой следует не-пробельный символ (как в оригинале)
     res = [item.strip() for item in re.split(r',(?=\S)', information_ans)]
 
     logging.info(f'Ответ на промпт (строка): {information_ans}')
     logging.info(f'Парсинг (список): {res}')
 
-    # Проверка минимального количества элементов (минимум 2: Название, Жанр)
     if len(res) < 2:
         raise IndexError(
             f"Недостаточно элементов в ответе для парсинга (получено {len(res)}). Ответ: {information_ans}")
 
-    # 4. Сохранение данных и проверка заголовка
     responds = add_to_csv_file_safe(res, film_title, information_ans)
 
     if not responds:
-        # Если add_to_csv_file_safe вернула False из-за несовпадения заголовков
         raise ValueError('Не совпадают названия на входе и выходе')
     else:
         return res
 
 
-# --- Главный блок выполнения (Оптимизированная инициализация) ---
-
 env = Env()
 env.read_env()
 api_key = env("API_KEY")
 
-# Инициализация клиента
 client_user = prompter(OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=api_key))
 
-# ОПТИМИЗАЦИЯ 1: Загрузка шаблона промпта один раз
 try:
     with open("prompt1.txt", "r", encoding="utf-8") as file_for_prompt:
-        # Находим первую строку, чтобы определить, куда вставлять название
         content = file_for_prompt.read()
 
-        # Предполагаем, что первая строка выглядит так: "Название фильма: <placeholder>"
-        # Заменяем место для названия на placeholder {title}
         prompt_template = content.replace(content.split('\n')[0], "Название фильма: {title}")
 
     logging.info('Шаблон промпта успешно загружен.')
@@ -179,10 +144,9 @@ except FileNotFoundError:
     logging.error("Файл 'prompt1.txt' не найден.", exc_info=True)
     raise
 
-# Загрузка списка фильмов
 try:
     with open('films_for_review.txt', 'r', encoding='utf-8') as file:
-        films_list = [f.strip() for f in file.readlines() if f.strip()]  # Удаляем пустые строки и пробелы
+        films_list = [f.strip() for f in file.readlines() if f.strip()]
 except FileNotFoundError:
     logging.error("Файл 'films_for_review.txt' не найден.", exc_info=True)
     raise

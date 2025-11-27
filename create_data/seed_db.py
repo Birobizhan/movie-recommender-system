@@ -28,60 +28,47 @@ def load_data_from_csv(csv_filepath: str):
                     continue
 
                 try:
-                    # ID и Названия
-                    kp_id = int(row[0])  # ID фильма (должен быть row[6], если порядок API+Source)
+                    kp_id = int(row[0])
                     english_title = row[1]
-                    title = row[6]  # Русское название
+                    title = row[6]
 
-                    # Рейтинги и голоса
                     kp_rating = float(row[2]) if row[2] else 0.0
-                    # Предполагаем, что imdb_rating и critics_rating идут далее
                     imdb_rating = float(row[3]) if row[3] else 0.0
                     critics_rating = float(row[4]) if row[4] else 0.0
                     sum_votes = int(row[8]) if row[8] else 0
 
-                    # Длина и Рейтинг
                     movie_length = int(row[10]) if row[10] else None
-                    age_rating = int(row[20]) if row[20] else None  # Последнее поле
+                    age_rating = int(row[20]) if row[20] else None
 
-                    # Сборы и бюджет
                     fees_world = row[7].strip()
                     budget = row[13].strip()
                     year_release = int(row[14]) if row[14] else None
 
-                    # Описание и Постер
                     description = row[11].strip()
                     poster_url = row[9].strip()
 
-                    # Даты
                     premiere_str = row[12].split('T')[0] if row[12] and 'T' in row[12] else None
                     world_premiere = datetime.strptime(premiere_str, '%Y-%m-%d').date() if premiere_str else None
 
-                    # Списки (ARRAY)
                     genres = parse_list_field(row[15])
                     countries = parse_list_field(row[16])
 
-                    # JSON: Парсинг персон (актеры)
+
                     persons_list = []
                     if row[17]:
-                        # Пример: '19216:Рутгер Хауэр, 20147:Дженнифер Джейсон Ли'
                         persons_list = [[int(item.split(':')[0]), item.split(':')[1]]
                                         for item in row[17].split(', ') if ':' in item]
 
-                    # JSON: Директор
                     director_id = row[18]
                     director_name = row[19]
                     director = [director_id, director_name] if director_id else None
 
-                    # 3. Создание объекта модели
                     movie = Movie(
-                        # Основные поля
                         kp_id=kp_id,
                         title=title,
                         english_title=english_title,
                         poster_url=poster_url,
                         description=description,
-                        # Числа и Рейтинги
                         kp_rating=kp_rating,
                         imdb_rating=imdb_rating,
                         critics_rating=critics_rating,
@@ -89,18 +76,13 @@ def load_data_from_csv(csv_filepath: str):
                         movie_length=movie_length,
                         age_rating=age_rating,
                         year_release=year_release,
-                        # Денежные поля
                         fees_world=fees_world,
                         budget=budget,
-                        # Даты
                         world_premiere=world_premiere,
-                        # Списки (ARRAY)
                         genres=genres,
                         countries=countries,
-                        # JSON поля
                         persons=persons_list,
                         director=director,
-                        # site_rating и imdb_rating, critics_rating, site_rating, id - нужно проверить!
                     )
 
                     db.add(movie)
@@ -109,7 +91,7 @@ def load_data_from_csv(csv_filepath: str):
                 except Exception as e:
                     db.rollback()
                     print(
-                        f"❌ Ошибка парсинга/конвертации строки {records_count + 1} (ID: {row[6] if len(row) > 6 else 'N/A'}): {e}. Строка: {row}")
+                        f"Ошибка парсинга/конвертации строки {records_count + 1} (ID: {row[6] if len(row) > 6 else 'N/A'}): {e}. Строка: {row}")
                     continue
 
             # 4. Коммит
@@ -119,7 +101,6 @@ def load_data_from_csv(csv_filepath: str):
     except FileNotFoundError:
         print(f"Файл {csv_filepath} не найден.")
     finally:
-        # Важно: закрываем сессию, используя логику из get_db
         db_generator.close()
 
 

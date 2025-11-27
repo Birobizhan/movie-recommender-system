@@ -15,17 +15,12 @@ def fetch_page(page_number, session):
     }
 
     try:
-        # Использование сессии для запроса
         with session.get(url, headers=headers, timeout=10) as response:
-            # Проверка статуса ответа (вызовет исключение для 4xx/5xx кодов)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Использование генератора/спискового включения для более быстрого и чистого извлечения данных
             films = [header.text for header in soup.find_all('span', class_='link__text')]
-
-            # print(f"Страница {page_number} успешно обработана. Фильмов: {len(films)}")
             return films
 
     except requests.exceptions.RequestException as e:
@@ -34,13 +29,11 @@ def fetch_page(page_number, session):
 
 
 def optimized_scraper():
-    # Список страниц, которые нужно обработать (от 2 до 9)
     pages_to_scrape = [1]
     time.sleep(1)
     with requests.Session() as session:
         results = [fetch_page(p, session) for p in pages_to_scrape]
 
-    # 4. Объединение результатов (сглаживание списка списков)
     films_list = [film for page_films in results for film in page_films]
 
     return films_list

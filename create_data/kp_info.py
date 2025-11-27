@@ -3,7 +3,6 @@ import requests
 from environs import Env
 import csv
 
-# --- КОНСТАНТЫ И ИНИЦИАЛИЗАЦИЯ ---
 env = Env()
 env.read_env()
 KINOPISK_KEY = env("KINOPOISK_TOKEN")

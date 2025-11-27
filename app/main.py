@@ -1,12 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # 1. Импорт для раздачи картинок
-from contextlib import asynccontextmanager
-
-# Импортируем настройки БД (предполагаем, что они у вас в app/database.py)
-# Если файла database нет, закомментируйте эти строки пока что
-from app.database import engine, Base
-
+from fastapi.staticfiles import StaticFiles
 from app.routes.users import router as users_router
 from app.routes.movies import router as movies_router
 from app.routes.reviews import router as reviews_router
@@ -22,29 +16,20 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-# 3. CORS: Добавляем порты для Vite
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",      # Стандартный React
-        "http://localhost:5173",      # <--- ВАЖНО: Стандартный порт Vite
+        "http://localhost:3000",
+        "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 4. Подключение статики (Картинок)
-# Теперь файлы из папки "static" будут доступны по адресу /static/filename.jpg
-# Создайте папку 'static' в корне проекта, если её нет.
-try:
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-except RuntimeError:
-    print("⚠️ Папка 'static' не найдена. Создайте её для хранения постеров.")
 
-# Подключаем роутеры
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
 app.include_router(movies_router, prefix="/api/movies", tags=["Movies"])
 app.include_router(reviews_router, prefix="/api/reviews", tags=["Reviews"])
@@ -64,5 +49,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    # reload=True нужен только для разработки
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

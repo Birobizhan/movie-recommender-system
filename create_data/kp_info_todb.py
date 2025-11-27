@@ -3,26 +3,21 @@ import requests
 from environs import Env
 import json
 
-# --- КОНСТАНТЫ И ИНИЦИАЛИЗАЦИЯ ---
 env = Env()
-# Читаем .env файл для получения токенов и URL
 env.read_env()
 KINOPISK_KEY = env("KINOPOISK_TOKEN")
-BACKEND_API_URL = "http://localhost:8000/api"  # API бэкенда
+BACKEND_API_URL = "http://localhost:8000/api"
 
-# Заголовок для API Кинопоиска
 HEADERS_KP = {
     'X-API-KEY': KINOPISK_KEY,
     'accept': 'application/json'
 }
 
-# Заголовок для отправки данных на ваш бэкенд
 HEADERS_BACKEND = {
     'Content-Type': 'application/json'
 }
 
 
-# Вспомогательная функция для безопасного извлечения float
 def safe_float(s):
     """Преобразует строку в float, возвращая 0.0, если строка пуста или не является числом."""
     try:
@@ -33,7 +28,6 @@ def safe_float(s):
         return 0.0
 
 
-# Вспомогательная функция для безопасного извлечения int
 def safe_int(s):
     """Преобразует строку в int, возвращая 0, если строка пуста или не является числом."""
     try:
