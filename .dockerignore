@@ -1,0 +1,7 @@
+# .dockerignore
+.git
+.gitignore
+.venv
+__pycache__
+# Игнорируем папку фронта при сборке бэка (у него свой контейнер)
+kino-frontend

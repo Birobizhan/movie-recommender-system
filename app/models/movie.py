@@ -21,7 +21,7 @@ class Movie(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     kp_id: Mapped[int] = mapped_column(index=True, unique=True)
     title: Mapped[str] = mapped_column(index=True)
-    english_title: Mapped[str] = mapped_column(String)
+    english_title: Mapped[str] = mapped_column(String, nullable=True)
 
     kp_rating: Mapped[float] = mapped_column(nullable=True, default=0.0)
     imdb_rating: Mapped[float] = mapped_column(nullable=True, default=0.0)
@@ -40,12 +40,13 @@ class Movie(Base):
     countries: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=True)
     persons: Mapped[list[list]] = mapped_column(JSON, nullable=True)
     director: Mapped[list] = mapped_column(JSON, nullable=True)
-    similarMovies: Mapped[list["Movie"]] = relationship(
-        secondary=movie_similarities,
-        primaryjoin=id == movie_similarities.c.movie_id,
-        # Условие для похожих фильмов (similar_movie_id = Movie.id)
-        secondaryjoin=id == movie_similarities.c.similar_movie_id,
-        # backref позволяет получить список фильмов, которые считают текущий фильм похожим
-        backref="is_similar_to"
-    )
+    combined_rating: Mapped[float] = mapped_column(nullable=True)
+    # similarMovies: Mapped[list["Movie"]] = relationship(
+    #     secondary=movie_similarities,
+    #     primaryjoin=id == movie_similarities.c.movie_id,
+    #     # Условие для похожих фильмов (similar_movie_id = Movie.id)
+    #     secondaryjoin=id == movie_similarities.c.similar_movie_id,
+    #     # backref позволяет получить список фильмов, которые считают текущий фильм похожим
+    #     backref="is_similar_to"
+    # )
     reviews = relationship("Review", back_populates="movie")

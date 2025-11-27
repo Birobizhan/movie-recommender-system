@@ -1,69 +1,55 @@
 version: '3.8'
 
 services:
-  # ----------------------------------------------------
-  # 1. PostgreSQL Database Service
-  # ----------------------------------------------------
+  # === БАЗА ДАННЫХ ===
   db:
     image: postgres:15-alpine
+    container_name: db
     restart: always
-    volumes:
-      # Сохранение данных между перезапусками
-      - postgres_data:/var/lib/postgresql/data/
     environment:
-      # Переменные для инициализации БД (берутся из .env)
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      # Подтягиваем переменные из .env
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      # Маппинг порта (опционально, для доступа с хоста)
-      - "5432:5432"
-
-  # ----------------------------------------------------
-  # 2. FastAPI Backend Service
-  # ----------------------------------------------------
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: always
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+      - "5433:5432"
     volumes:
-      # Маппинг кода для горячей перезагрузки (только для разработки)
-      - ./backend:/app
+      - postgres_data:/var/lib/postgresql/data
+
+  # === BACKEND ===
+  backend:
+    build: .
+    container_name: moviehub_backend
     ports:
       - "8000:8000"
-    environment:
-      # Переменные для подключения к БД (имя хоста - это имя сервиса 'db')
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     depends_on:
-      # Зависимость: бэкенд должен запуститься после БД
       - db
-    # Запуск миграций Alembic перед стартом приложения
-    # entrypoint: ["/bin/sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
-
-  # ----------------------------------------------------
-  # 3. React Frontend Service
-  # ----------------------------------------------------
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    restart: always
     volumes:
-      # Маппинг кода и исключение node_modules
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "3000:3000"
+      - ./app:/src/app
+      - ./static:/src/static
+      - ./main.py:/src/main.py
+      - ./alembic:/src/alembic
     environment:
-      # Указываем, куда React должен обращаться за API
-      VITE_API_URL: http://localhost:8000
-    depends_on:
-      - backend
+      # Подтягиваем полную строку подключения из .env
+      DATABASE_URL: ${DATABASE_URL}
 
-# ----------------------------------------------------
-# 4. Volumes (Для сохранения данных БД)
-# ----------------------------------------------------
+  frontend:
+    build: ./kino-frontend   # Строим из папки фронта
+    container_name: moviehub_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Пробрасываем код фронта для Hot Reload
+      - ./kino-frontend:/app
+      # Исключаем node_modules, чтобы не конфликтовали версии
+      - /app/node_modules
+    environment:
+      # Указываем, что нужно использовать опрос (polling) для отслеживания изменений,
+      # что необходимо для работы Live Reload в Docker на Windows/Mac
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_URL=http://localhost:8000
+    # Добавляем команду для запуска dev-сервера (если не указана в Dockerfile)
+    command: npm run dev
+
 volumes:
   postgres_data:

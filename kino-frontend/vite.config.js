@@ -1,7 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-})
+  server: {
+    // 🔑 Обязательно: Устанавливаем хост в '0.0.0.0', чтобы сервер был доступен
+    // извне Docker-контейнера через localhost:5173 на хосте.
+    host: '0.0.0.0',
+    port: 5173,
+    // 🔑 Обязательно: Используем опрос (polling) для отслеживания изменений файлов.
+    // Это обходит проблему, когда Docker Volumes не отправляет уведомления о событиях inotify
+    // на хост-машинах, отличных от Linux (Mac/Windows).
+    watch: {
+      usePolling: true,
+    }
+  }
+});

@@ -12,16 +12,6 @@ from app.routes.movies import router as movies_router
 from app.routes.reviews import router as reviews_router
 from app.routes.lists import router as lists_router
 
-# 2. LIFESPAN (События запуска и остановки)
-# Эта функция сработает один раз при старте сервера
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Логика при запуске: Создаем таблицы в БД
-    print("🚀 Запуск сервера... Проверка таблиц БД...")
-    Base.metadata.create_all(bind=engine)
-    yield
-    # Логика при выключении (если нужна)
-    print("🛑 Сервер останавливается")
 
 app = FastAPI(
     title="MovieHub API",
@@ -30,7 +20,6 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
-    lifespan=lifespan # Подключаем lifespan
 )
 
 # 3. CORS: Добавляем порты для Vite

@@ -6,7 +6,7 @@ from app.database import get_db
 from app.models.movie import Movie
 from app.models.review import Review
 from app.models.user import User
-from app.schemas.movie import MovieResponse
+from app.schemas.movie import MovieResponse, MovieCreate
 from app.schemas.review import ReviewResponse
 from app.schemas.user import UserResponse
 
@@ -32,6 +32,56 @@ def get_movies(
     
     movies = query.offset(skip).limit(limit).all()
     return movies
+
+
+@router.get("/top", response_model=List[MovieResponse])
+def get_top_250_movies(
+        skip: int = 0,
+        limit: int = 100,
+        genre: Optional[str] = Query(None),
+        year: Optional[int] = Query(None),
+        min_rating: Optional[float] = Query(None),
+        db: Session = Depends(get_db)
+):
+    query = db.query(Movie)
+
+    if genre:
+        query = query.filter(Movie.genre.contains(genre))
+    if year:
+        query = query.filter(Movie.year == year)
+    if min_rating:
+        query = query.filter(Movie.rating >= min_rating)
+    query = query.order_by(Movie.combined_rating.desc(), Movie.sum_votes.desc())
+    movies = query.offset(skip).limit(limit).all()
+    return movies
+
+
+@router.post("/", response_model=MovieResponse, status_code=201)
+def create_movie(movie: MovieCreate, db: Session = Depends(get_db)):
+    """
+    Создает новый фильм в базе данных.
+    Проверяет, не существует ли фильм с таким же kp_id.
+    """
+
+    # 1. Проверка на дубликат (по kp_id, так как он unique=True в вашей модели)
+    db_movie = db.query(Movie).filter(Movie.kp_id == movie.kp_id).first()
+    if db_movie:
+        raise HTTPException(
+            status_code=400,
+            detail="Movie with this Kinopoisk ID already exists"
+        )
+
+    # 2. Создание объекта модели SQLAlchemy
+    # Используем оператор **movie.model_dump() для преобразования Pydantic в dict
+    db_movie = Movie(**movie.model_dump())
+
+    # 3. Добавление в сессию и коммит
+    db.add(db_movie)
+    db.commit()
+    db.refresh(db_movie)  # Обновляем объект, чтобы получить ID, сгенерированный БД
+
+    return db_movie
+
 
 @router.get("/search", response_model=List[MovieResponse])
 def search_movies(

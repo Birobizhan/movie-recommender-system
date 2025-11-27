@@ -1,110 +1,130 @@
 import re
 import requests
 from environs import Env
+import csv
 
-all_info = []
+# --- КОНСТАНТЫ И ИНИЦИАЛИЗАЦИЯ ---
+env = Env()
+env.read_env()
+KINOPISK_KEY = env("KINOPOISK_TOKEN")
 
-with open(f'genre_with_info/Проверка.csv', 'r', encoding='utf-8') as f:
-    information = f.readlines()
-    for i in range(0, len(information)):
-        res = re.split(r',(?=\S)', information[i])
-        film_id = res[6]
-        url = f'https://api.kinopoisk.dev/v1.4/movie/{film_id}'
-        params = {
-            'page': 1,
-            'limit': 10,
-            'query': f'{film_id}'
-        }
-        env = Env()
-        env.read_env()
-        kinopoisk_key = env("KINOPOISK_TOKEN")
-        headers = {
-            'X-API-KEY': f'{kinopoisk_key}',
-            'accept': 'application/json'
-        }
-        info_to_db = [res[6], res[7], res[5], res[8], res[9], 'our_site_rating']
-        response = requests.get(url, headers=headers, params=params)
-        data = response.json()
-        if response.status_code == 200:
-            data = response.json()  # Предполагаем, что data получается так
+HEADERS = {
+    'X-API-KEY': KINOPISK_KEY,
+    'accept': 'application/json'
+}
 
-            # 1. Безопасное извлечение простых значений
-            film_name = data.get('name')
-            poster = data.get('poster', {}).get('url')
-            movie_length = data.get('movieLength')
-            description = data.get('description')
-            world_premiere = data.get('premiere', {}).get('world')
-            year_release = data.get('year')
-            ageRating = data.get('ageRating')
 
-            # 2. Безопасное извлечение сборов (Fees)
-            fees_data = data.get('fees', {}).get('world', {})
-            fees_world = fees_data.get('value')
-            fees_currency = fees_data.get('currency')
-            fees = f"{fees_world or ''}{fees_currency or ''}" if fees_world else "N/A"
+def process_and_write_data(input_filename, output_filename):
+    """
+    Обрабатывает данные фильмов, запрашивает информацию через API
+    и записывает ее в CSV-файл с разделителем колонок ';'.
+    """
+    with open(input_filename, 'r', encoding='utf-8') as f:
+        with open(output_filename, 'a', encoding='utf-8', newline='') as input_file:
 
-            # 3. Безопасное извлечение бюджета (Budget)
-            budget_data = data.get('budget', {})
-            budget_value = budget_data.get('value')
-            budget_curr = budget_data.get('currency')
-            budget = f"{budget_value or ''}{budget_curr or ''}" if budget_value else "N/A"
+            # Инициализация CSV-писателя
+            # Используем точку с запятой (;) в качестве разделителя колонок
+            csv_writer = csv.writer(input_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            information = f.readlines()
 
-            # 4. Безопасное извлечение и суммирование голосов
-            votes = data.get('votes', {})
-            # Используем .get() с дефолтом 0, чтобы гарантировать, что это число
-            kp_votes = votes.get('kp', 0)
-            imdb_votes = votes.get('imdb', 0)
-            filmCritics_votes = votes.get('filmCritics', 0)
-            sum_votes = kp_votes + imdb_votes + filmCritics_votes
+            print(f"Начало обработки {len(information)} строк...")
 
-            # 5. Генераторы списков (ОК)
-            genres = [genre.get('name') for genre in data.get('genres', []) if genre.get('name')]
-            countries = [country.get('name') for country in data.get('countries', []) if country.get('name')]
+            for i, line in enumerate(information):
+                # Используем ваш regex для разделения исходной строки
+                res = re.split(r',(?=\S)', line.strip())
 
-            # 6. Обработка персон (Режиссер + 10 первых)
-            persons = data.get('persons', [])
-            persons_to_db = []
-            director = None  # Инициализируем как None
-            counter = 0
+                if len(res) < 10:
+                    print(f"Пропуск строки {i + 1}: Недостаточно данных в исходном CSV.")
+                    continue
 
-            for person in persons:
-                profession = person.get('profession')
-                name = person.get('name')
-                person_id = person.get('id')
+                film_id = res[6]
+                url = f'https://api.kinopoisk.dev/v1.4/movie/{film_id}'
 
-                if profession == 'режиссеры' and director is None:
-                    # Находим первого режиссера
-                    director = [person_id, name]
-                elif counter < 10 and person_id and name:
-                    # Добавляем до 10 других персон
-                    persons_to_db.append([person_id, name])
-                    counter += 1
+                params = {'query': film_id}
 
-            # 7. Похожие фильмы
-            similarMovies = [[movie.get('id'), movie.get('name')]
-                             for movie in data.get('similarMovies', [])
-                             if movie.get('id') and movie.get('name')]
+                # 2. Исходные данные
+                initial_info = [
+                    res[6], res[7], res[5], res[8], res[9].strip(), '0'
+                ]
 
-            # 8. Сборка результата в СЛОВАРЬ (Рекомендуется!)
-            film_info = {
-                "film_name": film_name,
-                "fees": fees,
-                "sum_votes": sum_votes,
-                "poster": poster,
-                "movie_length": movie_length,
-                "description": description,
-                "world_premiere": world_premiere,
-                "budget": budget,
-                "year_release": year_release,
-                "genres": genres,
-                "countries": countries,
-                "persons": persons_to_db,
-                "director": director,
-                "ageRating": ageRating,
-                "similarMovies": similarMovies
-            }
-            all_info.append(film_info)
-            print(film_info)
+                # 3. Запрос к API
+                response = requests.get(url, headers=HEADERS, params=params)
 
-# Сильнее,Биографический,Драма,Спортивные легенды,Современное кино (2000–2020), kp_rating
-# id_kinopoisk,name_english, imdb_rating, filmCrtitics_rating
+                if response.status_code == 200:
+                    data = response.json()
+
+                    # --- Извлечение и форматирование данных ---
+
+                    # Обработка сборов и бюджета
+                    fees_data = data.get('fees', {}).get('world', {})
+                    fees = f"{fees_data.get('value') or ''}{fees_data.get('currency') or ''}" if fees_data.get(
+                        'value') else "N/A"
+
+                    budget_data = data.get('budget', {})
+                    budget = f"{budget_data.get('value') or ''}{budget_data.get('currency') or ''}" if budget_data.get(
+                        'value') else "N/A"
+
+                    # Голоса
+                    votes = data.get('votes', {})
+                    sum_votes = votes.get('kp', 0) + votes.get('imdb', 0) + votes.get('filmCritics', 0)
+
+                    # Списки (Жанры, Страны) - используем ', '.join() для внутреннего разделения
+                    genres = ', '.join([genre.get('name') for genre in data.get('genres', []) if genre.get('name')])
+                    countries = ', '.join(
+                        [country.get('name') for country in data.get('countries', []) if country.get('name')])
+
+                    # Персоны
+                    persons_list = data.get('persons', [])
+                    persons_to_db = []
+                    director = [None, None]
+                    counter = 0
+
+                    for person in persons_list:
+                        profession = person.get('profession')
+                        name = person.get('name')
+                        person_id = person.get('id')
+
+                        if profession == 'режиссеры' and director[0] is None:
+                            director = [person_id, name]
+                        elif counter < 10 and person_id and name:
+                            # Храним персон в формате ID:Name
+                            persons_to_db.append(f"{person_id}:{name}")
+                            counter += 1
+
+                    persons_final = ', '.join(persons_to_db)  # Объединяем персон
+
+                    # 8. Сборка строки API-данных
+                    api_info_row = [
+                        data.get('name'),
+                        fees,
+                        sum_votes,
+                        data.get('poster', {}).get('url'),
+                        data.get('movieLength'),
+                        # Очищаем описание от переводов строк
+                        data.get('description', '').replace('\n', ' ').replace('\r', '').strip(),
+                        data.get('premiere', {}).get('world'),
+                        budget,
+                        data.get('year'),
+                        genres,
+                        countries,
+                        persons_final,
+                        director[0],
+                        director[1],
+                        data.get('ageRating')
+                    ]
+
+                    # 9. Объединение и запись
+                    # Заменяем None на пустую строку
+                    final_row = initial_info + [str(item) if item is not None else '' for item in api_info_row]
+
+                    csv_writer.writerow(final_row)
+
+                    print(f"✅ Успешно обработан фильм ID: {film_id}")
+
+                else:
+                    print(f"Ошибка API для фильма ID: {film_id}. Статус: {response.status_code}")
+
+
+# Вызов функции
+# Убедитесь, что пути 'genre_with_info/Проверка.csv' и 'movies_with_all_info/check.csv' верны
+process_and_write_data(f'genre_with_info/Проверка.csv', f'movies_with_all_info/check.csv')

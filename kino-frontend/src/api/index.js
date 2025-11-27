@@ -6,7 +6,7 @@ const api = axios.create({
 });
 
 // Функция для получения всех фильмов
-export const getMovies = () => api.get('/movies/');
+export const getMovies = () => api.get('/movies/top');
 
 // Функция для получения одного фильма по ID
 export const getMovieById = (id) => api.get(`/movies/${id}/`);
