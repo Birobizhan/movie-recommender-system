@@ -6,7 +6,7 @@ with open('genre_csv/Комедия.csv', 'r', encoding='utf-8') as f:
     with open(f'genre_with_info/{f.name[10:]}', 'a', encoding='utf-8') as file:
         information = f.readlines()
         file.writelines(information[0])
-        for i in range(432, len(information)):
+        for i in range(1993, len(information)):
             res = re.split(r',(?=\S)', information[i])
             name = res[0]
             rate = float(res[5].rstrip())
@@ -46,7 +46,7 @@ with open('genre_csv/Комедия.csv', 'r', encoding='utf-8') as f:
                     ]
                     res.extend(new_data)
                     final_res_string = ','.join(res) + '\n'
-
+                    print(i)
                     print(final_res_string.strip())
                     file.writelines(final_res_string)
                 else:
