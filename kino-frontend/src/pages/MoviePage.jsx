@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getMovieById } from '../api';
+import { getMovieById, getMovieReviews, createReview, getCurrentUser, getUserLists, addMoviesToList } from '../api';
 
 // --- ФУНКЦИЯ ДЛЯ КОМБИНИРОВАННОГО РЕЙТИНГА ---
 const calculateCombinedRating = (movie) => {
@@ -109,13 +109,23 @@ const MoviePage = () => {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // Добавляем состояние ошибки
+  const [reviews, setReviews] = useState([]);
+  const [reviewRating, setReviewRating] = useState('');
+  const [reviewContent, setReviewContent] = useState('');
+  const [reviewError, setReviewError] = useState('');
+  const [myLists, setMyLists] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    getMovieById(id)
-      .then((response) => {
-        setMovie(response.data);
+    Promise.all([
+      getMovieById(id).then((r)=>r.data),
+      getMovieReviews(id).then((r)=>r.data)
+    ])
+      .then(([movieData, reviewsData]) => {
+        setMovie(movieData);
+        setReviews(reviewsData || []);
       })
       .catch((err) => {
         console.error("Ошибка при загрузке фильма:", err);
@@ -127,6 +137,14 @@ const MoviePage = () => {
         }
       })
       .finally(() => setLoading(false));
+
+    getCurrentUser()
+      .then((resp) => {
+        setCurrentUser(resp.data);
+        return getUserLists(resp.data.id);
+      })
+      .then((resp) => setMyLists(resp.data || []))
+      .catch(() => {});
   }, [id]);
 
   if (loading) return (
@@ -174,6 +192,75 @@ const MoviePage = () => {
   const feesWorld = movie.fees_world;
   const premiere = movie.world_premiere;
 
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setReviewError('');
+    if (!reviewRating) {
+      setReviewError('Укажите оценку');
+      return;
+    }
+    try {
+      const payload = {
+        rating: Number(reviewRating),
+        content: reviewContent || null,
+        movie_id: Number(id),
+      };
+      const resp = await createReview(payload);
+      setReviews([resp.data, ...reviews]);
+      setReviewRating('');
+      setReviewContent('');
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Не удалось отправить отзыв';
+      setReviewError(msg);
+    }
+  };
+
+  const addToWatchLater = async () => {
+    if (!currentUser) {
+      setReviewError('Нужен вход, чтобы добавлять в списки');
+      return;
+    }
+    const watchList = myLists.find((l) => l.title.toLowerCase().includes('буду смотреть'));
+    if (!watchList) {
+      setReviewError('Список "Буду смотреть" не найден');
+      return;
+    }
+    try {
+      await addMoviesToList(watchList.id, [Number(id)]);
+    } catch {
+      setReviewError('Не удалось добавить в список');
+    }
+  };
+
+  const addToList = async (listId) => {
+    if (!currentUser) {
+      setReviewError('Нужен вход, чтобы добавлять в списки');
+      return;
+    }
+    try {
+      await addMoviesToList(listId, [Number(id)]);
+    } catch {
+      setReviewError('Не удалось добавить в список');
+    }
+  };
+
+  const rateQuick = async () => {
+    const val = prompt('Ваша оценка (0-10):');
+    if (val === null) return;
+    const num = Number(val);
+    if (Number.isNaN(num) || num < 0 || num > 10) {
+      alert('Оценка должна быть от 0 до 10');
+      return;
+    }
+    try {
+      const resp = await createReview({ rating: num, content: null, movie_id: Number(id) });
+      setReviews([resp.data, ...reviews]);
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Не удалось поставить оценку';
+      setReviewError(msg);
+    }
+  };
+
   return (
     <main>
         <div className="page-container movie-detail-page">
@@ -181,7 +268,7 @@ const MoviePage = () => {
             <div className="movie-header-section">
 
                 {/* === ЛЕВАЯ КОЛОНКА: ПОСТЕР И ДЕЙСТВИЯ === */}
-                <div className="poster-column">
+                    <div className="poster-column">
                     {movie.poster_url ? (
                         <img
                             src={movie.poster_url}
@@ -197,10 +284,22 @@ const MoviePage = () => {
                     )}
 
                     <div className="action-button-group">
-                        <button className="add-to-list-btn">
+                        <button className="add-to-list-btn" onClick={addToWatchLater}>
                             <span className="icon">+</span>
-                            Добавить в списки
+                            Буду смотреть
                         </button>
+                        {myLists.length > 0 && (
+                          <select
+                            onChange={(e)=> { if (e.target.value) addToList(Number(e.target.value)); }}
+                            defaultValue=""
+                            style={{marginTop:'8px', padding:'8px', borderRadius:'8px', background:'#1b1b20', color:'#f0f0f0', border:'1px solid #2f2f37'}}
+                          >
+                            <option value="">Добавить в список...</option>
+                            {myLists.map((l)=>(
+                              <option key={l.id} value={l.id}>{l.title}</option>
+                            ))}
+                          </select>
+                        )}
                     </div>
                 </div>
 
@@ -273,17 +372,15 @@ const MoviePage = () => {
                 </div>
 
                 {/* === ПРАВАЯ КОЛОНКА: РЕЙТИНГ И АКТЕРЫ === */}
-                <div className="rating-column">
+                    <div className="rating-column">
                     <div className="main-rating">{combinedRating}</div>
                     <p className="rating-subtitle">{hasValue(movie.sum_votes) ? movie.sum_votes.toLocaleString() : '0'} оценок</p>
-                    {/* Примерное число просмотров, если есть sum_votes */}
                     {hasValue(movie.sum_votes) && (
                         <p className="rating-subtitle">{(movie.sum_votes * 5).toLocaleString()} просмотров (прим.)</p>
                     )}
 
-                    <button className="rate-button">Оценить ★</button>
+                    <button className="rate-button" onClick={rateQuick}>Оценить ★</button>
 
-                    {/* Показываем актеров, только если есть список */}
                     {hasValue(castList) && (
                         <>
                             <h2 className="cast-header">Актерский состав:</h2>
@@ -292,6 +389,54 @@ const MoviePage = () => {
                     )}
                 </div>
 
+            </div>
+
+            {/* --- Отзывы --- */}
+            <div style={{marginTop: '32px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
+              <div>
+                <h2>Отзывы</h2>
+                {reviews.length === 0 && <p style={{color:'#aaa'}}>Отзывов пока нет</p>}
+                <ul style={{listStyle:'none', padding:0, display:'flex', flexDirection:'column', gap:'12px'}}>
+                  {reviews.map((rev) => (
+                    <li key={rev.id} style={{padding:'12px', border:'1px solid #333', borderRadius:'8px'}}>
+                      <div style={{display:'flex', justifyContent:'space-between'}}>
+                        <strong>Оценка: {rev.rating}</strong>
+                        {rev.created_at && <span style={{color:'#888', fontSize:'0.85rem'}}>{new Date(rev.created_at).toLocaleString()}</span>}
+                      </div>
+                      {rev.content && <p style={{marginTop:'8px'}}>{rev.content}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h2>Оставить отзыв</h2>
+                <form onSubmit={handleReviewSubmit} style={{display:'flex', flexDirection:'column', gap:'12px'}}>
+                  <label>
+                    Оценка (0-10)
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={reviewRating}
+                      onChange={(e)=>setReviewRating(e.target.value)}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Текст (опционально)
+                    <textarea
+                      value={reviewContent}
+                      onChange={(e)=>setReviewContent(e.target.value)}
+                      placeholder="Поделитесь впечатлением"
+                      rows={4}
+                    />
+                  </label>
+                  {reviewError && <p style={{color:'red'}}>{reviewError}</p>}
+                  <button type="submit" className="btn-watch-later">Отправить</button>
+                  <p style={{color:'#888', fontSize:'0.9rem'}}>Для отправки нужен вход (JWT-токен).</p>
+                </form>
+              </div>
             </div>
         </div>
     </main>

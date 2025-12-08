@@ -1,26 +1,4 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from environs import Env
-from typing import Generator
+"""Backward-compatibility shim. Prefer app.db.session and app.db.base."""
 
-env = Env()
-env.read_env()
-
-SQLALCHEMY_DATABASE_URL = env.str('DATABASE_URL')
-
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-
-# Создание фабрики сессий
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-def get_db() -> Generator:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+from app.db.base import Base  # noqa: F401
+from app.db.session import SessionLocal, engine, get_db  # noqa: F401

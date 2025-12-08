@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MoviePage from './pages/MoviePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ListsPage from './pages/ListsPage';
 import './style.css'; // Не забудь положить сюда файл style.css из предыдущего ответа
 
 function App() {
@@ -12,6 +15,9 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="movie/:id" element={<MoviePage />} />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="lists" element={<ListsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.routes.users import router as users_router
-from app.routes.movies import router as movies_router
-from app.routes.reviews import router as reviews_router
-from app.routes.lists import router as lists_router
+from app.api.routers.users import router as users_router
+from app.api.routers.movies import router as movies_router
+from app.api.routers.reviews import router as reviews_router
+from app.api.routers.lists import router as lists_router
 
 
 app = FastAPI(

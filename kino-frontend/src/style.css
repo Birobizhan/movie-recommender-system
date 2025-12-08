@@ -7,10 +7,25 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    /* Фон изменен на темный, как на новом макете */
-    background-color: #1f1f1f;
-    color: #f0f0f0; /* Основной_цвет текста светлый */
+    background-color: #0f0f10;
+    color: #f0f0f0;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+footer {
+    flex-shrink: 0;
 }
 
 a {
@@ -66,11 +81,17 @@ header .search-container {
 header .search-container input {
     width: 100%;
     padding: 10px 36px 10px 12px;
-    border-radius: 4px;
-    background-color: #D9D9D9;
+    border-radius: 10px;
+    background-color: #2b2b2e;
     color: #fff;
     outline: none;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    border: 1px solid #3a3a3d;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+header .search-container input:focus {
+    border-color: #6ab4ff;
+    box-shadow: 0 0 0 3px rgba(106, 180, 255, 0.25);
 }
 
 header .search-container button {
@@ -141,11 +162,13 @@ main.login-page-main {
     max-width: 1280px; /* Широкий контейнер */
     margin: 32px auto; /* Отступы сверху/снизу и_центрирование */
     padding: 30px;
-    background: #ffffff;
-    color: #111; /* Текст внутри этого_блока_делаем_темным */
+    background: linear-gradient(135deg, #18181b 0%, #111113 100%);
+    color: #f5f5f7;
     border-radius: 16px;
     display: flex;
     gap: 32px; /* Пробел между колонками */
+    flex-wrap: wrap;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45);
 }
 
 .main-content {
@@ -154,7 +177,7 @@ main.login-page-main {
 
 .sidebar {
     flex: 1; /* Сайдбар_занимает 1/4 */
-    min-width: 280px; /* Минимальная ширина */
+    min-width: 300px; /* Минимальная ширина */
 }
 
 /* --- Стили основной колонки --- */
@@ -170,27 +193,38 @@ main.login-page-main {
 }
 
 .filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 20px;
-    padding: 24px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 16px;
     margin: 24px 0;
-    border-top: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.9rem;
+    background: #0f0f12;
+    border: 1px solid #25252c;
+    border-radius: 12px;
 }
 
-.filters span {
-    color: #555;
+.filters input,
+.filters select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #2f2f37;
+    background: #1b1b20;
+    color: #f0f0f0;
 }
 
-.filters a {
-    font-weight: 500;
-    color: #333;
+.filters button {
+    padding: 12px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6ab4ff, #5f8bff);
+    color: #0f0f10;
+    font-weight: 600;
+    border: none;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
 }
-.filters a:hover {
-    color: #000;
+.filters button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(95, 139, 255, 0.35);
 }
 
 /* --- Стили списка фильмов --- */
@@ -200,11 +234,12 @@ main.login-page-main {
 }
 
 .movie-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 24px 0;
-    border-bottom: 1px solid #f0f0f0;
+    display: grid;
+    grid-template-columns: 40px 70px 1fr 90px 90px;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 0;
+    border-bottom: 1px solid #24242a;
 }
 .movie-item:last-child {
     border-bottom: none;
@@ -222,8 +257,8 @@ main.login-page-main {
 .movie-item .poster-placeholder {
     width: 60px;
     height: 90px;
-    background-color: #e0e0e0;
-    border-radius: 4px;
+    background-color: #2a2a30;
+    border-radius: 8px;
     flex-shrink: 0;
 }
 
@@ -233,19 +268,19 @@ main.login-page-main {
 
 .movie-item .details h4 {
     font-size: 1.2rem;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 4px;
 }
 
 .movie-item .details .meta {
     font-size: 0.9rem;
-    color: #666;
+    color: #9aa0b5;
 }
 
 .movie-item .details .crew,
 .movie-item .details .cast {
     font-size: 0.85rem;
-    color: #333;
+    color: #cfd3e0;
     margin-top: 6px;
 }
 
@@ -259,12 +294,12 @@ main.login-page-main {
 .movie-item .rating .rating-value {
     font-size: 1.4rem;
     font-weight: 600;
-    color: #2e7d32; /* Зеленый_рейтинг */
+    color: #6ab4ff;
 }
 
 .movie-item .rating .votes {
     font-size: 0.85rem;
-    color: #999;
+    color: #9aa0b5;
 }
 
 .movie-item .actions {
@@ -276,15 +311,16 @@ main.login-page-main {
 }
 
 .movie-item .actions .btn-watch-later {
-    background-color: #f4f4f5;
+    background: #1b1b20;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: 10px;
     font-size: 0.9rem;
-    font-weight: 500;
-    color: #333;
+    font-weight: 600;
+    color: #f5f5f7;
+    border: 1px solid #2f2f37;
 }
 .movie-item .actions .btn-watch-later:hover {
-    background-color: #e0e0e0;
+    background-color: #25252c;
 }
 
 .movie-item .actions .icon {
@@ -330,7 +366,7 @@ main.login-page-main {
 .sidebar-item .sidebar-poster {
     width: 50px;
     height: 75px;
-    background-color: #e0e0e0;
+    background-color: #2a2a30;
     border-radius: 4px;
     flex-shrink: 0;
 }

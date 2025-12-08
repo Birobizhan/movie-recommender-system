@@ -38,26 +38,40 @@ def safe_int(s):
         return 0
 
 
-def process_and_add_to_db(input_filename):
+def process_and_add_to_db(input_filename, start_line=1):
     """
     Обрабатывает данные фильмов, запрашивает информацию через API Кинопоиска
     и отправляет данные на ваш бэкенд для сохранения в БД.
+
+    :param input_filename: Имя файла для обработки.
+    :param start_line: Номер строки, с которой начать обработку (1-индексированный).
     """
     MOVIE_CREATE_URL = f'{BACKEND_API_URL}/movies/'
 
+    # Вычисляем индекс начала (списки 0-индексированы, поэтому вычитаем 1)
+    start_index = max(0, start_line - 1)
+
     try:
         with open(input_filename, 'r', encoding='utf-8') as f:
-            information = f.readlines()
-            print(f"Начало обработки {len(information)} строк...")
+            all_lines = f.readlines()
+
+            # Используем срез для получения строк, начиная с нужного индекса
+            information = all_lines[start_index:]
+
+            print(f"Начало обработки {len(information)} строк, начиная со строки {start_line}...")
+
     except FileNotFoundError:
         print(f"Ошибка: Файл {input_filename} не найден.")
         return
 
     for i, line in enumerate(information):
+        # Вычисляем фактический номер строки в исходном файле для логирования
+        current_line_num = i + start_line
+
         res = re.split(r',(?=\S)', line.strip())
 
         if len(res) < 10:
-            print(f"Пропуск строки {i + 1}: Недостаточно данных в исходном CSV ({len(res)}).")
+            print(f"Пропуск строки {current_line_num}: Недостаточно данных в исходном CSV ({len(res)}).")
             continue
 
         try:
@@ -71,11 +85,11 @@ def process_and_add_to_db(input_filename):
 
         except IndexError:
             print(
-                f"Пропуск строки {i + 1}: Ошибка доступа к индексу при парсинге исходного CSV. Проверьте структуру строки.")
+                f"Пропуск строки {current_line_num}: Ошибка доступа к индексу при парсинге исходного CSV. Проверьте структуру строки.")
             continue
 
         if film_id == 0:
-            print(f"Пропуск строки {i + 1}: Не удалось извлечь Film ID.")
+            print(f"Пропуск строки {current_line_num}: Не удалось извлечь Film ID.")
             continue
 
         user_rating = 0.0
@@ -85,22 +99,23 @@ def process_and_add_to_db(input_filename):
         try:
             response_kp = requests.get(url_kp, headers=HEADERS_KP, timeout=10)
         except requests.exceptions.RequestException as e:
-            print(f"Ошибка запроса к Kinopoisk API для ID {film_id}: {e}")
+            print(f"Ошибка запроса к Kinopoisk API для ID {film_id} (строка {current_line_num}): {e}")
             continue
 
         if response_kp.status_code == 200:
             try:
                 data = response_kp.json()
             except json.JSONDecodeError:
-                print(f"Ошибка декодирования JSON для ID {film_id}")
+                print(f"Ошибка декодирования JSON для ID {film_id} (строка {current_line_num})")
                 continue
 
-
-            fees_data = data.get('fees', {}).get('world', {})
+            # ИСПРАВЛЕНИЕ: Гарантируем, что fees_data не будет None, даже если 'world' == null
+            fees_data = (data.get('fees') or {}).get('world') or {}
             fees_world = f"{fees_data.get('value') or ''}{fees_data.get('currency') or ''}" if fees_data.get(
                 'value') else None
 
-            budget_data = data.get('budget', {})
+            # Проверка для budget_data (на всякий случай, если там тоже может быть None)
+            budget_data = data.get('budget') or {}
             budget = f"{budget_data.get('value') or ''}{budget_data.get('currency') or ''}" if budget_data.get(
                 'value') else None
 
@@ -171,17 +186,18 @@ def process_and_add_to_db(input_filename):
                 )
 
                 if response_db.status_code in [200, 201]:
-                    print(f"Успешно добавлен фильм ID: {film_id} в БД. Статус: {response_db.status_code}")
+                    print(
+                        f"Успешно добавлен фильм ID: {film_id} (строка {current_line_num}) в БД. Статус: {response_db.status_code}")
                 else:
                     print(
-                        f"Ошибка добавления в БД для ID {film_id}. Статус: {response_db.status_code}. Ответ: {response_db.text}")
+                        f"Ошибка добавления в БД для ID {film_id} (строка {current_line_num}). Статус: {response_db.status_code}. Ответ: {response_db.text}")
 
             except requests.exceptions.RequestException as e:
-                print(f"Ошибка POST запроса к бэкенду для ID {film_id}: {e}")
+                print(f"Ошибка POST запроса к бэкенду для ID {film_id} (строка {current_line_num}): {e}")
 
         else:
-            print(
-                f"Ошибка API Кинопоиска для фильма ID: {film_id}. Статус: {response_kp.status_code}. Ответ: {response_kp.text}")
+            raise Exception(
+                f"Ошибка API Кинопоиска для фильма ID: {film_id} (строка {current_line_num}). Статус: {response_kp.status_code}. Ответ: {response_kp.text}")
 
 
-process_and_add_to_db('genre_with_info/Исторический.csv')
+process_and_add_to_db('genre_with_info/Фэнтези.csv', start_line=213)

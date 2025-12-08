@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getMovies } from '../api';
+
+const GENRES = [
+  'Боевик', 'Драма', 'Комедия', 'Фантастика', 'Фэнтези',
+  'Триллер', 'Ужасы', 'Приключения', 'Семейный', 'Детектив',
+  'Криминал', 'Исторический', 'Мелодрама'
+];
 
 // --- ФУНКЦИЯ ДЛЯ КОМБИНИРОВАННОГО РЕЙТИНГА ---
 const calculateCombinedRating = (movie) => {
@@ -81,14 +87,29 @@ const getMainActors = (personsArray) => {
 
 const HomePage = () => {
   const [movies, setMovies] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Состояние загрузки
-  const [error, setError] = useState(null); // Состояние ошибки
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('q') || '');
+  const [genre, setGenre] = useState('');
+  const [year, setYear] = useState('');
+  const [minRating, setMinRating] = useState('');
+  const [sortBy, setSortBy] = useState('rating'); // rating | votes
+
+  const fetchMovies = () => {
     setIsLoading(true);
     setError(null);
+    const params = {
+      limit: 250,
+      sort_by: sortBy,
+    };
+    if (search) params.q = search;
+    if (genre) params.genre = genre;
+    if (year) params.year = year;
+    if (minRating) params.min_rating = minRating;
 
-    getMovies()
+    getMovies(params)
       .then((response) => {
         setMovies(response.data);
         setIsLoading(false);
@@ -99,7 +120,17 @@ const HomePage = () => {
         setError(`Не удалось загрузить фильмы. Проверьте бэкенд (Status: ${status}).`);
         setIsLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => {
+    const qParam = searchParams.get('q') || '';
+    setSearch(qParam);
+  }, [searchParams]);
+
+  useEffect(() => {
+    fetchMovies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, search]);
 
   if (isLoading) {
     return (
@@ -136,10 +167,18 @@ const HomePage = () => {
             По формуле: среднее арифметическое оценок (Кинопоиск, IMDb, Критики).
           </p>
           <div className="filters">
-            <span>Просмотрено: {movies.length} из 250 фильмов</span>
-            <a href="#">Жанр &#x25BC;</a>
-            <a href="#">Дата выхода &#x25BC;</a>
-            <a href="#">Сортировать по &#x25BC;</a>
+            <span style={{color:'#9aa0b5'}}>Показано: {movies.length} из 250</span>
+            <select value={genre} onChange={(e)=>setGenre(e.target.value)}>
+              <option value="">Любой жанр</option>
+              {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <input placeholder="Год" value={year} onChange={(e)=>setYear(e.target.value)} />
+            <input placeholder="Мин. рейтинг" value={minRating} onChange={(e)=>setMinRating(e.target.value)} />
+            <select value={sortBy} onChange={(e)=>setSortBy(e.target.value)}>
+              <option value="rating">Рейтинг</option>
+              <option value="votes">Популярность</option>
+            </select>
+            <button onClick={fetchMovies}>Применить</button>
           </div>
 
           <ul className="movie-list">

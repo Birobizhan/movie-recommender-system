@@ -1,6 +1,6 @@
 from datetime import date
 from typing import Optional
-from app.database import Base
+from app.db.base import Base
 from sqlalchemy import (
     String, Text, Date, JSON,
     Table, Column, Integer, ForeignKey)

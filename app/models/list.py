@@ -5,7 +5,7 @@ from sqlalchemy import (
     Table, Column, Integer, ForeignKey)
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 from sqlalchemy.sql import func
-from app.database import Base
+from app.db.base import Base
 
 list_movie_association = Table(
     'list_movie_association',
