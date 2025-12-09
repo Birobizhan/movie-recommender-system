@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.models.user import User
 from app.schemas.movie import MovieResponse, MovieCreate
-from app.services import movies as movie_service
+from app.services import MovieService
 
 router = APIRouter(tags=["Movies"])
 
@@ -21,8 +22,8 @@ def get_movies(
     q: Optional[str] = Query(None, description="поиск по названию"),
     db: Session = Depends(deps.get_db),
 ):
-    return movie_service.get_movies(
-        db,
+    service = MovieService(db)
+    return service.get_movies(
         skip=skip,
         limit=limit,
         genre=genre,
@@ -44,8 +45,8 @@ def get_top_250_movies(
     q: Optional[str] = Query(None, description="поиск по названию"),
     db: Session = Depends(deps.get_db),
 ):
-    return movie_service.get_top_movies(
-        db,
+    service = MovieService(db)
+    return service.get_top_movies(
         skip=skip,
         limit=limit,
         genre=genre,
@@ -57,9 +58,14 @@ def get_top_250_movies(
 
 
 @router.post("/", response_model=MovieResponse, status_code=201)
-def create_movie(movie: MovieCreate, db: Session = Depends(deps.get_db)):
+def create_movie(
+    movie: MovieCreate,
+    current_user: User = Depends(deps.get_current_admin),  # Только админ может создавать фильмы
+    db: Session = Depends(deps.get_db),
+):
     try:
-        return movie_service.create_movie(db, movie)
+        service = MovieService(db)
+        return service.create_movie(movie)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -71,12 +77,14 @@ def search_movies(
     limit: int = 50,
     db: Session = Depends(deps.get_db),
 ):
-    return movie_service.search(db, q=q, skip=skip, limit=limit)
+    service = MovieService(db)
+    return service.search(q=q, skip=skip, limit=limit)
 
 
 @router.get("/{movie_id}", response_model=MovieResponse)
 def get_movie(movie_id: int, db: Session = Depends(deps.get_db)):
-    movie = movie_service.get_movie(db, movie_id)
+    service = MovieService(db)
+    movie = service.get_movie(movie_id)
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
     return movie
@@ -84,7 +92,8 @@ def get_movie(movie_id: int, db: Session = Depends(deps.get_db)):
 
 @router.get("/{movie_id}/similar", response_model=List[MovieResponse])
 def get_similar_movies(movie_id: int, limit: int = 10, db: Session = Depends(deps.get_db)):
-    similar = movie_service.get_similar(db, movie_id, limit=limit)
+    service = MovieService(db)
+    similar = service.get_similar(movie_id, limit=limit)
     if similar is None:
         raise HTTPException(status_code=404, detail="Movie not found")
     return similar

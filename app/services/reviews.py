@@ -1,58 +1,68 @@
 from sqlalchemy.orm import Session
 
 from app.models.review import Review
-from app.repositories import reviews as review_repo
-from app.repositories import users as user_repo
-from app.repositories import movies as movie_repo
+from app.repositories.reviews import ReviewRepository
+from app.repositories.users import UserRepository
+from app.repositories.movies import MovieRepository
 from app.schemas.review import ReviewCreate, ReviewUpdate
 
 
-def create_review(db: Session, review_in: ReviewCreate, current_username: str) -> Review:
-    user = user_repo.get_by_username(db, current_username)
-    if not user:
-        raise ValueError("User not found")
+class ReviewService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.review_repo = ReviewRepository(db)
+        self.user_repo = UserRepository(db)
+        self.movie_repo = MovieRepository(db)
 
-    movie = movie_repo.get_movie(db, review_in.movie_id)
-    if not movie:
-        raise LookupError("Movie not found")
+    def create_review(self, review_in: ReviewCreate, current_user) -> Review:
+        from app.models.user import User
+        if not isinstance(current_user, User):
+            raise ValueError("Invalid user object")
 
-    existing = review_repo.get_user_movie_review(db, user.id, review_in.movie_id)
-    if existing:
-        raise ValueError("You have already reviewed this movie")
+        movie = self.movie_repo.get_movie(review_in.movie_id)
+        if not movie:
+            raise LookupError("Movie not found")
 
-    return review_repo.create_review(
-        db,
-        content=review_in.content,
-        rating=review_in.rating,
-        author_id=user.id,
-        movie_id=review_in.movie_id,
-    )
+        existing = self.review_repo.get_user_movie_review(current_user.id, review_in.movie_id)
+        if existing:
+            raise ValueError("You have already reviewed this movie")
 
+        return self.review_repo.create_review(
+            content=review_in.content,
+            rating=review_in.rating,
+            author_id=current_user.id,
+            movie_id=review_in.movie_id,
+        )
 
-def update_review(db: Session, review_id: int, review_in: ReviewUpdate, current_username: str) -> Review:
-    user = user_repo.get_by_username(db, current_username)
-    review = review_repo.get_by_id(db, review_id)
-    if not review:
-        raise LookupError("Review not found")
-    if not user or review.author_id != user.id:
-        raise PermissionError("Not enough permissions")
+    def update_review(self, review_id: int, review_in: ReviewUpdate, current_user) -> Review:
+        from app.models.user import User
+        if not isinstance(current_user, User):
+            raise ValueError("Invalid user object")
+            
+        review = self.review_repo.get_by_id(review_id)
+        if not review:
+            raise LookupError("Review not found")
+        # Пользователь может редактировать только свои отзывы, админ может редактировать любые
+        if review.author_id != current_user.id and not current_user.is_admin():
+            raise PermissionError("Not enough permissions")
 
-    return review_repo.update_review(db, review, content=review_in.content, rating=review_in.rating)
+        return self.review_repo.update_review(review, content=review_in.content, rating=review_in.rating)
 
+    def delete_review(self, review_id: int, current_user) -> None:
+        from app.models.user import User
+        if not isinstance(current_user, User):
+            raise ValueError("Invalid user object")
+            
+        review = self.review_repo.get_by_id(review_id)
+        if not review:
+            raise LookupError("Review not found")
+        # Пользователь может удалять только свои отзывы, админ может удалять любые
+        if review.author_id != current_user.id and not current_user.is_admin():
+            raise PermissionError("Not enough permissions")
+        self.review_repo.delete_review(review)
 
-def delete_review(db: Session, review_id: int, current_username: str) -> None:
-    user = user_repo.get_by_username(db, current_username)
-    review = review_repo.get_by_id(db, review_id)
-    if not review:
-        raise LookupError("Review not found")
-    if not user or review.author_id != user.id:
-        raise PermissionError("Not enough permissions")
-    review_repo.delete_review(db, review)
+    def list_movie_reviews(self, movie_id: int, skip: int = 0, limit: int = 50):
+        return self.review_repo.get_for_movie(movie_id, skip=skip, limit=limit)
 
-
-def list_movie_reviews(db: Session, movie_id: int, skip: int = 0, limit: int = 50):
-    return review_repo.get_for_movie(db, movie_id, skip=skip, limit=limit)
-
-
-def list_user_reviews(db: Session, user_id: int, skip: int = 0, limit: int = 50):
-    return review_repo.get_for_user(db, user_id, skip=skip, limit=limit)
+    def list_user_reviews(self, user_id: int, skip: int = 0, limit: int = 50):
+        return self.review_repo.get_for_user(user_id, skip=skip, limit=limit)
