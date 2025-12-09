@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.schemas.user import UserBase, UserCreate, UserResponse, UserProfile, UserLogin, Token
-from app.services import users as user_service
-from app.repositories import users as user_repo
-from app.repositories import reviews as review_repo
-from app.repositories import lists as list_repo
+from app.models.user import User
+from app.schemas.user import UserBase, UserCreate, UserResponse, UserProfile, UserLogin, Token, UserUpdate, UserPasswordUpdate
+from app.services import UserService
+from app.repositories import UserRepository
 from app.models.review import Review
 from app.models.list import MovieList
 
@@ -16,7 +15,8 @@ router = APIRouter(tags=["Users"])
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(deps.get_db)):
     try:
-        return user_service.register_user(db, user)
+        service = UserService(db)
+        return service.register_user(user)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
@@ -24,7 +24,8 @@ def register_user(user: UserCreate, db: Session = Depends(deps.get_db)):
 @router.post("/login", response_model=Token)
 def login_user(user_data: UserLogin, db: Session = Depends(deps.get_db)):
     try:
-        result = user_service.login_user(db, user_data)
+        service = UserService(db)
+        result = service.login_user(user_data)
         return {**result, "user": UserResponse.model_validate(result["user"])}
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
@@ -32,18 +33,50 @@ def login_user(user_data: UserLogin, db: Session = Depends(deps.get_db)):
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(
-    current_user: str = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
-    user = user_repo.get_by_username(db, current_user)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+def update_current_user_profile(
+    user_update: UserUpdate,
+    current_user: User = Depends(deps.get_current_user),
+    db: Session = Depends(deps.get_db),
+):
+    """
+    Обновление своего профиля (email, username).
+    Пользователь может обновлять только свой профиль.
+    """
+    try:
+        service = UserService(db)
+        return service.update_profile(current_user, user_update)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.put("/me/password", response_model=UserResponse)
+def update_current_user_password(
+    password_update: UserPasswordUpdate,
+    current_user: User = Depends(deps.get_current_user),
+    db: Session = Depends(deps.get_db),
+):
+    """
+    Изменение пароля текущего пользователя.
+    Требует старый пароль для подтверждения.
+    """
+    try:
+        service = UserService(db)
+        return service.update_password(current_user, password_update)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.get("/{user_id}", response_model=UserProfile)
 def get_user_profile(user_id: int, db: Session = Depends(deps.get_db)):
-    user = user_repo.get_by_id(db, user_id)
+    user_repo = UserRepository(db)
+    user = user_repo.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -62,3 +95,25 @@ def get_user_profile(user_id: int, db: Session = Depends(deps.get_db)):
         lists_count=lists_count,
         average_rating=avg_rating,
     )
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+def update_user_profile(
+    user_id: int,
+    user_update: UserUpdate,
+    current_user: User = Depends(deps.get_current_admin),  # Только админ может обновлять чужие профили
+    db: Session = Depends(deps.get_db),
+):
+    """
+    Обновление профиля пользователя администратором.
+    Админ может обновлять профили любых пользователей.
+    """
+    try:
+        service = UserService(db)
+        return service.update_user_by_admin(user_id, user_update, current_user)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
