@@ -89,3 +89,8 @@ class ListService:
 
     def get_user_lists(self, user_id: int):
         return self.list_repo.get_user_lists(user_id)
+
+
+
+
+

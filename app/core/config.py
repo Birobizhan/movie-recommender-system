@@ -14,3 +14,4 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = env.int("ACCESS_TOKEN_EXPIRE_MINUTES", 30)
 
 # Optional refresh token lifetime (days)
 REFRESH_TOKEN_EXPIRE_DAYS: int = env.int("REFRESH_TOKEN_EXPIRE_DAYS", 30)
+

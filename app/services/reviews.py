@@ -25,7 +25,12 @@ class ReviewService:
 
         existing = self.review_repo.get_user_movie_review(current_user.id, review_in.movie_id)
         if existing:
-            raise ValueError("You have already reviewed this movie")
+            # апсерт: если уже есть отзыв, просто обновляем рейтинг/контент
+            return self.review_repo.update_review(
+                existing,
+                content=review_in.content,
+                rating=review_in.rating
+            )
 
         return self.review_repo.create_review(
             content=review_in.content,

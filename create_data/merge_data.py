@@ -168,7 +168,7 @@ def process_file(input_file_path, output_file_path):
     # 4. Запись объединенных данных
     try:
         with open(output_file_path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, delimiter=';')
             writer.writerow(HEADER)
 
             for record in merged_data:

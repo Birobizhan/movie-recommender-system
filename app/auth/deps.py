@@ -75,3 +75,8 @@ async def get_optional_user(
         return user_repo.get_by_username(username)
     except Exception:
         return None
+
+
+
+
+

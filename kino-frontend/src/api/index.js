@@ -33,11 +33,21 @@ export const updateReview = (reviewId, payload) => api.put(`/reviews/${reviewId}
 
 // Списки
 export const getUserLists = (userId) => api.get(`/lists/user/${userId}`);
+export const getListById = (listId) => api.get(`/lists/${listId}`);
 export const createList = (payload) => api.post('/lists/', payload);
 export const addMoviesToList = (listId, movieIds) =>
     api.post(`/lists/${listId}/movies`, { movie_ids: movieIds });
 export const removeMoviesFromList = (listId, movieIds) =>
     api.delete(`/lists/${listId}/movies`, { data: { movie_ids: movieIds } });
+
+// Watchlist helper
+export const ensureWatchlist = async (userId) => {
+    const listsResp = await getUserLists(userId);
+    const existing = (listsResp.data || []).find((l) => l.title === 'Буду смотреть');
+    if (existing) return existing;
+    const created = await createList({ title: 'Буду смотреть', description: 'Отложенные фильмы' });
+    return created.data;
+};
 
 // Утилита для обновления заголовка при логине
 export const setAuthToken = (token) => {

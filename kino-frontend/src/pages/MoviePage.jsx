@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getMovieById, getMovieReviews, createReview, getCurrentUser, getUserLists, addMoviesToList } from '../api';
+import { getMovieById, getMovieReviews, createReview, getCurrentUser, getUserLists, addMoviesToList, removeMoviesFromList, ensureWatchlist, getListById } from '../api';
 
 // --- ФУНКЦИЯ ДЛЯ КОМБИНИРОВАННОГО РЕЙТИНГА ---
 const calculateCombinedRating = (movie) => {
@@ -115,6 +115,8 @@ const MoviePage = () => {
   const [reviewError, setReviewError] = useState('');
   const [myLists, setMyLists] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [watchlistId, setWatchlistId] = useState(null);
+  const [inWatchlist, setInWatchlist] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -141,9 +143,22 @@ const MoviePage = () => {
     getCurrentUser()
       .then((resp) => {
         setCurrentUser(resp.data);
-        return getUserLists(resp.data.id);
+        return Promise.all([
+          getUserLists(resp.data.id),
+          ensureWatchlist(resp.data.id)
+        ]);
       })
-      .then((resp) => setMyLists(resp.data || []))
+      .then(async ([listsResp, wl]) => {
+        setMyLists(listsResp.data || []);
+        setWatchlistId(wl.id);
+        try {
+          const wlData = await getListById(wl.id);
+          const ids = new Set((wlData.data.movies || []).map((m) => m.id));
+          setInWatchlist(ids.has(Number(id)));
+        } catch (e) {
+          setInWatchlist(false);
+        }
+      })
       .catch(() => {});
   }, [id]);
 
@@ -215,49 +230,18 @@ const MoviePage = () => {
     }
   };
 
-  const addToWatchLater = async () => {
-    if (!currentUser) {
-      setReviewError('Нужен вход, чтобы добавлять в списки');
-      return;
-    }
-    const watchList = myLists.find((l) => l.title.toLowerCase().includes('буду смотреть'));
-    if (!watchList) {
-      setReviewError('Список "Буду смотреть" не найден');
-      return;
-    }
+  const toggleWatchLater = async () => {
+    if (!currentUser || !watchlistId) return;
     try {
-      await addMoviesToList(watchList.id, [Number(id)]);
-    } catch {
-      setReviewError('Не удалось добавить в список');
-    }
-  };
-
-  const addToList = async (listId) => {
-    if (!currentUser) {
-      setReviewError('Нужен вход, чтобы добавлять в списки');
-      return;
-    }
-    try {
-      await addMoviesToList(listId, [Number(id)]);
-    } catch {
-      setReviewError('Не удалось добавить в список');
-    }
-  };
-
-  const rateQuick = async () => {
-    const val = prompt('Ваша оценка (0-10):');
-    if (val === null) return;
-    const num = Number(val);
-    if (Number.isNaN(num) || num < 0 || num > 10) {
-      alert('Оценка должна быть от 0 до 10');
-      return;
-    }
-    try {
-      const resp = await createReview({ rating: num, content: null, movie_id: Number(id) });
-      setReviews([resp.data, ...reviews]);
+      if (inWatchlist) {
+        await removeMoviesFromList(watchlistId, [Number(id)]);
+        setInWatchlist(false);
+      } else {
+        await addMoviesToList(watchlistId, [Number(id)]);
+        setInWatchlist(true);
+      }
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Не удалось поставить оценку';
-      setReviewError(msg);
+      console.error('watchlist toggle error', err);
     }
   };
 
@@ -284,21 +268,13 @@ const MoviePage = () => {
                     )}
 
                     <div className="action-button-group">
-                        <button className="add-to-list-btn" onClick={addToWatchLater}>
-                            <span className="icon">+</span>
-                            Буду смотреть
-                        </button>
-                        {myLists.length > 0 && (
-                          <select
-                            onChange={(e)=> { if (e.target.value) addToList(Number(e.target.value)); }}
-                            defaultValue=""
-                            style={{marginTop:'8px', padding:'8px', borderRadius:'8px', background:'#1b1b20', color:'#f0f0f0', border:'1px solid #2f2f37'}}
+                        {currentUser && (
+                          <button
+                            className={`btn-watch-later big ${inWatchlist ? 'in-list' : ''}`}
+                            onClick={toggleWatchLater}
                           >
-                            <option value="">Добавить в список...</option>
-                            {myLists.map((l)=>(
-                              <option key={l.id} value={l.id}>{l.title}</option>
-                            ))}
-                          </select>
+                            {inWatchlist ? '✓ В списке' : '+ Буду смотреть'}
+                          </button>
                         )}
                     </div>
                 </div>
@@ -308,12 +284,6 @@ const MoviePage = () => {
                     <h1 className="movie-title-header">
                         {movie.title || movie.english_title || 'Название неизвестно'} ({hasValue(movieYear) ? movieYear : '—'})
                     </h1>
-
-                    {/* Кнопки действий */}
-                    <div className="action-buttons-line">
-                        <button className="btn-watch-later">+ Буду смотреть</button>
-                        <span className="icon">•••</span>
-                    </div>
 
                     <h2>О фильме</h2>
                     <div className="movie-meta-table">
@@ -379,8 +349,6 @@ const MoviePage = () => {
                         <p className="rating-subtitle">{(movie.sum_votes * 5).toLocaleString()} просмотров (прим.)</p>
                     )}
 
-                    <button className="rate-button" onClick={rateQuick}>Оценить ★</button>
-
                     {hasValue(castList) && (
                         <>
                             <h2 className="cast-header">Актерский состав:</h2>
@@ -410,31 +378,34 @@ const MoviePage = () => {
               </div>
               <div>
                 <h2>Оставить отзыв</h2>
-                <form onSubmit={handleReviewSubmit} style={{display:'flex', flexDirection:'column', gap:'12px'}}>
-                  <label>
-                    Оценка (0-10)
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      value={reviewRating}
-                      onChange={(e)=>setReviewRating(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Текст (опционально)
+                <form className="review-form" onSubmit={handleReviewSubmit}>
+                    <div className="rating-row">
+                        <span style={{color:'#ccc'}}>Ваша оценка:</span>
+                        <div className="rating-stars-block">
+                            {[...Array(10)].map((_, i) => {
+                                const val = i + 1;
+                                return (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        className={`star-btn ${val <= reviewRating ? 'active' : ''}`}
+                                        onClick={() => setReviewRating(val)}
+                                    >
+                                        ★
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                     <textarea
-                      value={reviewContent}
-                      onChange={(e)=>setReviewContent(e.target.value)}
-                      placeholder="Поделитесь впечатлением"
-                      rows={4}
+                        rows={4}
+                        placeholder="Ваш отзыв..."
+                        value={reviewContent}
+                        onChange={(e)=>setReviewContent(e.target.value)}
                     />
-                  </label>
-                  {reviewError && <p style={{color:'red'}}>{reviewError}</p>}
-                  <button type="submit" className="btn-watch-later">Отправить</button>
-                  <p style={{color:'#888', fontSize:'0.9rem'}}>Для отправки нужен вход (JWT-токен).</p>
+                    {!currentUser && <p style={{color:'#888', fontSize:'0.9rem'}}>Для отправки нужен вход.</p>}
+                    {reviewError && <p style={{color:'red'}}>{reviewError}</p>}
+                    <button type="submit">Отправить</button>
                 </form>
               </div>
             </div>

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
+from app.schemas.movie import MovieResponse
 
 class MovieListBase(BaseModel):
     title: str
@@ -19,6 +20,7 @@ class MovieListResponse(MovieListBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     movie_count: int
+    movies: Optional[List[MovieResponse]] = None
     
     class Config:
         from_attributes = True

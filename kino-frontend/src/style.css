@@ -310,17 +310,35 @@ main.login-page-main {
     padding-top: 8px;
 }
 
-.movie-item .actions .btn-watch-later {
-    background: #1b1b20;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 0.9rem;
+.movie-item .actions .btn-watch-later,
+.action-button-group .btn-watch-later,
+.btn-watch-later {
+    background: #dfe1e6;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: #f5f5f7;
-    border: 1px solid #2f2f37;
+    color: #181a1f;
+    border: 1px solid #cfd3db;
+    transition: background 0.2s ease, transform 0.1s ease;
 }
-.movie-item .actions .btn-watch-later:hover {
-    background-color: #25252c;
+.movie-item .actions .btn-watch-later:hover,
+.action-button-group .btn-watch-later:hover,
+.btn-watch-later:hover {
+    background-color: #d0d3da;
+}
+.movie-item .actions .btn-watch-later.in-list,
+.action-button-group .btn-watch-later.in-list,
+.btn-watch-later.in-list {
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    border-color: #2e7d32;
+    color: #f5f5f7;
+}
+.movie-item .actions .btn-watch-later.big,
+.action-button-group .btn-watch-later.big,
+.btn-watch-later.big {
+    padding: 12px 18px;
+    font-size: 1.05rem;
 }
 
 .movie-item .actions .icon {
@@ -402,22 +420,80 @@ main.login-page-main {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.action-button-group .add-to-list-btn {
+.action-button-group {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: 10px;
-    width: 100%;
-    padding: 10px 15px;
-    background-color: #f0f0f0;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 500;
-    color: #333;
-    transition: background-color 0.2s;
+    margin-top: 16px;
 }
-.action-button-group .add-to-list-btn:hover {
-    background-color: #e0e0e0;
+
+.btn-watch-later.big {
+    padding: 12px 16px;
+    font-size: 1.05rem;
+    background: linear-gradient(135deg, #6ab4ff, #5f8bff);
+    color: #0f0f10;
+    border: none;
+}
+
+.review-form {
+    margin-top: 24px;
+    padding: 20px;
+    border: 1px solid #e5e5ea;
+    border-radius: 12px;
+    background: #eeeeee;
+    display: grid;
+    gap: 14px;
+}
+.review-form h3 {
+    margin: 0;
+    color: #f5f5f7;
+}
+.review-form .rating-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    color: #e9e9e9;
+}
+.review-form .rating-stars-block {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    background: #ffffff;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid #e5e5ea;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.review-form .rating-stars-block .star-btn {
+    font-size: 18px;
+    color: #9aa0b5;
+}
+.review-form .rating-stars-block .star-btn.active {
+    color: #f2c94c;
+}
+.review-form input,
+.review-form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid hsl(0, 0%, 63%);
+    background: hsl(240, 31%, 95%);
+    color: #111;
+}
+.review-form input::placeholder,
+.review-form textarea::placeholder {
+    color: #666;
+}
+.review-form button {
+    align-self: flex-start;
+    background: linear-gradient(135deg, #6ab4ff, #5f8bff);
+    color: #0f0f10;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-weight: 700;
+    border: none;
+    box-shadow: 0 6px 18px rgba(90, 150, 255, 0.25);
 }
 
 /* === Стили ЦЕНТРАЛЬНОЙ колонки (Инфо) === */

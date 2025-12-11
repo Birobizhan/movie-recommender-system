@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getMovies } from '../api';
+import { getMovies, getCurrentUser, ensureWatchlist, addMoviesToList, removeMoviesFromList, createReview, getMovieById, getListById } from '../api';
 
 const GENRES = [
   'Боевик', 'Драма', 'Комедия', 'Фантастика', 'Фэнтези',
@@ -36,57 +36,30 @@ const calculateCombinedRating = (movie) => {
 // ----------------------------------------------------
 
 
-// --- БЕЗОПАСНОЕ ИЗВЛЕЧЕНИЕ РЕЖИССЕРА (Оставлена без изменений) ---
 const getDirectorName = (directorData) => {
-    // Проверка на пустые данные или не-массив
-    if (!Array.isArray(directorData) || directorData.length === 0) return 'Неизвестен';
-
-    // В списке, данные о режиссере часто приходят как массив с одной строкой: ["55971; Пол Верховен"]
-    const directorString = directorData[0];
-
-    // Проверяем, что это строка, и безопасно извлекаем имя
-    if (typeof directorString === 'string') {
-        // Разделяем строку по ';' и берем последний элемент (имя), убирая пробелы
-        const parts = directorString.split(';');
-        return parts.pop().trim() || 'Неизвестен';
+    if (!directorData || (Array.isArray(directorData) && directorData.length === 0)) return 'Неизвестен';
+    // directorData уже нормализован до списка строк в БД
+    if (Array.isArray(directorData)) {
+        const first = directorData[0];
+        return typeof first === 'string' ? first : 'Неизвестен';
     }
-
+    if (typeof directorData === 'string') return directorData;
     return 'Неизвестен';
 };
 
-// --- БЕЗОПАСНОЕ ИЗВЛЕЧЕНИЕ АКТЕРОВ (ИСПРАВЛЕНО ДЛЯ ДВОЙНОЙ ВЛОЖЕННОСТИ) ---
 const getMainActors = (personsArray) => {
     if (!personsArray || personsArray.length === 0) return 'Актеры не указаны';
-
-    let castList = personsArray;
-
-    // Если структура [[[...]]], то нужно распаковать внешний массив
-    if (Array.isArray(castList) && castList.length === 1 && Array.isArray(castList[0])) {
-        // Если castList[0] — это массив, содержащий другой массив, как в вашем первом примере
-        if (Array.isArray(castList[0][0]) && castList[0].length === 1) {
-             castList = castList[0][0]; // [[[...]]] -> [...]
-        } else {
-             castList = castList[0]; // [[...]] -> [...]
-        }
-    }
-
-    // После распаковки убеждаемся, что мы имеем дело с массивом [ID, Name]
-    if (!Array.isArray(castList)) return 'Актеры не указаны';
-
-    const actorNames = castList
-      .slice(0, 3) // Берем только первых 3 актеров для списка
-      .map(person => {
-        // Каждый person должен быть массивом [ID, Name]
-        return Array.isArray(person) && person.length >= 2 ? person[1] : null;
-      })
-      .filter(name => name); // Фильтруем пустые имена
-
+    // persons уже нормализованы до списка строк в БД
+    const actorNames = personsArray.slice(0, 3).map((p) => (typeof p === 'string' ? p : null)).filter(Boolean);
     return actorNames.join(', ') || 'Актеры не указаны';
-}
+};
 
 
 const HomePage = () => {
   const [movies, setMovies] = useState([]);
+  const [me, setMe] = useState(null);
+  const [watchlistId, setWatchlistId] = useState(null);
+  const [pending, setPending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -96,6 +69,9 @@ const HomePage = () => {
   const [year, setYear] = useState('');
   const [minRating, setMinRating] = useState('');
   const [sortBy, setSortBy] = useState('rating'); // rating | votes
+  const [activeRatingMovie, setActiveRatingMovie] = useState(null);
+  const [userRatings, setUserRatings] = useState({});
+  const [watchlistSet, setWatchlistSet] = useState(new Set());
 
   const fetchMovies = () => {
     setIsLoading(true);
@@ -130,7 +106,58 @@ const HomePage = () => {
   useEffect(() => {
     fetchMovies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, search]);
+  }, [sortBy, search, genre, year, minRating]);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then(async (resp) => {
+        setMe(resp.data);
+        const wl = await ensureWatchlist(resp.data.id);
+        setWatchlistId(wl.id);
+        try {
+          const wlData = await getListById(wl.id);
+          const ids = new Set((wlData.data.movies || []).map((m) => m.id));
+          setWatchlistSet(ids);
+        } catch (e) {
+          setWatchlistSet(new Set());
+        }
+      })
+      .catch(() => setMe(null));
+  }, []);
+
+  const toggleWatchLater = async (movieId, inWatchlist) => {
+    if (!me || !watchlistId) return;
+    setPending(true);
+    try {
+      if (inWatchlist) {
+        await removeMoviesFromList(watchlistId, [movieId]);
+        setWatchlistSet((prev) => {
+          const next = new Set(prev);
+          next.delete(movieId);
+          return next;
+        });
+      } else {
+        await addMoviesToList(watchlistId, [movieId]);
+        setWatchlistSet((prev) => new Set(prev).add(movieId));
+      }
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const submitQuickRating = async (movieId, rating) => {
+    if (!me) return;
+    try {
+      await createReview({ movie_id: movieId, rating, content: '' });
+      // перезагрузим одну карточку
+      const updated = await getMovieById(movieId);
+      setMovies((prev) => prev.map((m) => (m.id === movieId ? updated.data : m)));
+      setUserRatings((prev) => ({ ...prev, [movieId]: rating }));
+      setActiveRatingMovie(null);
+    } catch (e) {
+      console.error('rating error', e);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -192,6 +219,8 @@ const HomePage = () => {
                     // Безопасная обработка genres
                     const genres = Array.isArray(movie.genres) ? movie.genres.join(', ') : (movie.genres || '—');
                     const combinedRating = calculateCombinedRating(movie);
+                    const inWatchlist = watchlistSet.has(movie.id);
+                    const reviewsCount = movie.reviews_count ?? (Array.isArray(movie.reviews) ? movie.reviews.length : 0);
 
                     return (
                     <li className="movie-item" key={movie.id}>
@@ -237,13 +266,64 @@ const HomePage = () => {
                             <span className="rating-value">
                                 {combinedRating}
                             </span>
-                            <div className="votes">{movie.sum_votes ? movie.sum_votes.toLocaleString() : '0'}</div>
+                            <div className="votes">
+                              {movie.sum_votes ? movie.sum_votes.toLocaleString() : '0'}
+                              {reviewsCount ? ` • отзывов: ${reviewsCount}` : ''}
+                            </div>
                         </div>
 
                         {/* 5. Действия (Кнопки) */}
-                        <div className="actions">
-                            <button className="btn-watch-later">+ Буду смотреть</button>
-                            <span className="icon">★</span>
+                        <div className="actions" style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
+                            {me ? (
+                              <button
+                                className={`btn-watch-later ${inWatchlist ? 'in-list' : ''}`}
+                                disabled={pending}
+                                onClick={() => toggleWatchLater(movie.id, inWatchlist)}
+                              >
+                                {inWatchlist ? '✓ В списке' : '+ Буду смотреть'}
+                              </button>
+                            ) : (
+                              <Link to="/login" className="btn-watch-later">+ Буду смотреть</Link>
+                            )}
+                            <div className="stars" style={{position:'relative'}}>
+                              <button
+                                className="star-btn"
+                                style={{
+                                  padding:'0 6px',
+                                  fontSize:'16px',
+                                  lineHeight:'1.2',
+                                  color: userRatings[movie.id] ? '#f2c94c' : '#9aa0b5'
+                                }}
+                                onClick={() => setActiveRatingMovie(activeRatingMovie === movie.id ? null : movie.id)}
+                                title="Поставить оценку"
+                              >
+                                ★
+                              </button>
+                              {activeRatingMovie === movie.id && (
+                                <div className="rating-popover" style={{position:'absolute', top:'28px', left:0, background:'#11141d', border:'1px solid #2a2f3f', borderRadius:'8px', padding:'6px', display:'flex', gap:'4px', zIndex:5}}>
+                                  {[...Array(10)].map((_, i) => {
+                                    const starVal = i + 1;
+                                    const rated = userRatings[movie.id] || 0;
+                                    return (
+                                      <button
+                                        key={starVal}
+                                        className="star-btn"
+                                        style={{
+                                          padding:'2px 6px',
+                                          fontSize:'14px',
+                                          lineHeight:'1.2',
+                                          color: starVal <= rated ? '#f2c94c' : '#9aa0b5'
+                                        }}
+                                        onClick={() => submitQuickRating(movie.id, starVal)}
+                                        title={`Оценить на ${starVal}`}
+                                      >
+                                        ★
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
                             <span className="icon">•••</span>
                         </div>
                     </li>

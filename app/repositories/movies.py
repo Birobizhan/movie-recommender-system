@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func, cast, TEXT
 
 from app.models.movie import Movie
 
@@ -10,23 +11,27 @@ class MovieRepository:
         self.db = db
 
     def list_movies(
-        self,
-        *,
-        skip: int = 0,
-        limit: int = 250,
-        genre: Optional[str] = None,
-        year: Optional[int] = None,
-        min_rating: Optional[float] = None,
-        order_by_top: bool = False,
-        sort_by: Optional[str] = None,
-        search_q: Optional[str] = None,
+            self,
+            *,
+            skip: int = 0,
+            limit: int = 250,
+            genre: Optional[str] = None,
+            year: Optional[int] = None,
+            min_rating: Optional[float] = None,
+            order_by_top: bool = False,
+            sort_by: Optional[str] = None,
+            search_q: Optional[str] = None,
     ) -> List[Movie]:
         query = self.db.query(Movie)
 
         if genre:
-            query = query.filter(
-                Movie.genres.contains([genre]) if hasattr(Movie, "genres") else Movie.genre.contains(genre)
-            )
+            # жанры в БД хранятся в массиве строк (часто в нижнем регистре) — делаем case-insensitive поиск
+            if hasattr(Movie, "genres"):
+                query = query.filter(
+                    func.lower(cast(Movie.genres, TEXT)).like(f"%{genre.lower()}%")
+                )
+            else:
+                query = query.filter(Movie.genre.ilike(f"%{genre}%"))
         if year:
             query = query.filter(
                 Movie.year_release == year if hasattr(Movie, "year_release") else Movie.year == year
@@ -37,6 +42,7 @@ class MovieRepository:
                 query = query.filter(rating_column >= min_rating)
         if search_q:
             query = query.filter(Movie.title.ilike(f"%{search_q}%"))
+        query = query.filter(Movie.sum_votes >= 50_000)
 
         if order_by_top or sort_by:
             combined = getattr(Movie, "combined_rating", getattr(Movie, "rating", None))

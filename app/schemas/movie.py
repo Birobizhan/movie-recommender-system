@@ -6,9 +6,9 @@ class MovieBase(BaseModel):
     title: str = Field(..., description="Название фильма (Русское)")
     english_title: Optional[str] = None
 
-    kp_rating: float = 0.0
-    imdb_rating: float = 0.0
-    critics_rating: float = 0.0
+    kp_rating: Optional[float] = 0.0
+    imdb_rating: Optional[float] = 0.0
+    critics_rating: Optional[float] = 0.0
     movie_length: Optional[int] = None
     year_release: Optional[int] = None
     age_rating: Optional[int] = None
@@ -23,8 +23,8 @@ class MovieBase(BaseModel):
     # Списки
     genres: Optional[list[str]] = None
     countries: Optional[list[str]] = None
-    persons: Optional[list[list[Any]]] = None
-    director: Optional[list[Any]] = None
+    persons: Optional[list[str]] = None
+    director: Optional[str] = None
 
     # Дата
     world_premiere: Optional[date] = None
@@ -70,7 +70,7 @@ class MovieCreate(BaseModel):
     description: Optional[str] = None
     genres: Optional[list[str]] = None
     countries: Optional[list[str]] = None
-    persons: Optional[list[list[Any]]] = None
-    director: Optional[list[Any]] = None
+    persons: Optional[list[str]] = None
+    director: Optional[list[str]] = None
     world_premiere: Optional[date] = None
     combined_rating: Optional[float] = 0.0
