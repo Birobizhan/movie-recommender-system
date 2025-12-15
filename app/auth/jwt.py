@@ -54,6 +54,20 @@ def verify_refresh_token(token: str) -> Dict[str, Any]:
     return payload
 
 
+def create_password_reset_token(email: str) -> str:
+    """Создает JWT токен для сброса пароля. Время жизни: 1 час."""
+    to_encode = {"email": email, "type": "password_reset"}
+    expire = datetime.utcnow() + timedelta(hours=1)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-
+def verify_password_reset_token(token: str) -> Dict[str, Any]:
+    """Проверяет токен сброса пароля."""
+    payload = verify_token(token)
+    if payload.get("type") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+    return payload

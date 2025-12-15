@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 
 from app.auth.password import hash_password, verify_password
-from app.auth.jwt import create_access_token
+from app.auth.jwt import create_access_token, create_password_reset_token, verify_password_reset_token
 from app.models.user import User
 from app.repositories.users import UserRepository
 from app.repositories.lists import ListRepository
-from app.schemas.user import UserCreate, UserLogin, UserUpdate, UserPasswordUpdate
+from app.schemas.user import UserCreate, UserLogin, UserUpdate, UserPasswordUpdate, PasswordResetRequest, PasswordResetConfirm
 
 
 class UserService:
@@ -100,3 +100,48 @@ class UserService:
             email=user_update.email,
             username=user_update.username,
         )
+
+    def request_password_reset(self, reset_request: PasswordResetRequest) -> dict:
+        """
+        Создает токен для сброса пароля.
+        В реальном приложении здесь должна быть отправка email с токеном.
+        Для демонстрации возвращаем токен в ответе.
+        """
+        email = reset_request.email.strip().lower()
+        user = self.user_repo.get_by_email(email)
+        if not user:
+            # Не раскрываем, существует ли пользователь с таким email
+            # Всегда возвращаем успешный ответ
+            return {"message": "If an account with that email exists, a password reset link has been sent."}
+        
+        reset_token = create_password_reset_token(email)
+        # В реальном приложении здесь должна быть отправка email
+        # Для демонстрации возвращаем токен в ответе
+        return {
+            "message": "Password reset token generated",
+            "reset_token": reset_token  # В продакшене не возвращаем токен!
+        }
+
+    def reset_password(self, reset_confirm: PasswordResetConfirm) -> dict:
+        """
+        Устанавливает новый пароль по токену сброса.
+        """
+        try:
+            payload = verify_password_reset_token(reset_confirm.token)
+            email = payload.get("email")
+            if not email:
+                raise ValueError("Invalid token: email not found")
+            
+            user = self.user_repo.get_by_email(email)
+            if not user:
+                raise ValueError("User not found")
+            
+            # Хешируем новый пароль
+            new_hashed_password = hash_password(reset_confirm.new_password)
+            self.user_repo.update_password(user, new_hashed_password)
+            
+            return {"message": "Password has been reset successfully"}
+        except Exception as e:
+            if "expired" in str(e).lower() or "exp" in str(e).lower():
+                raise ValueError("Password reset token has expired")
+            raise ValueError(f"Invalid or expired token: {str(e)}")

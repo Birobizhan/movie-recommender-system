@@ -44,3 +44,9 @@ class UserProfile(UserResponse):
     lists_count: int
     average_rating: Optional[float] = None
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str

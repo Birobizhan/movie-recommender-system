@@ -69,6 +69,7 @@ const HomePage = () => {
   const [year, setYear] = useState('');
   const [minRating, setMinRating] = useState('');
   const [sortBy, setSortBy] = useState('rating'); // rating | votes
+  const [applyTick, setApplyTick] = useState(0);
   const [activeRatingMovie, setActiveRatingMovie] = useState(null);
   const [userRatings, setUserRatings] = useState({});
   const [watchlistSet, setWatchlistSet] = useState(new Set());
@@ -106,7 +107,7 @@ const HomePage = () => {
   useEffect(() => {
     fetchMovies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, search, genre, year, minRating]);
+  }, [applyTick]);
 
   useEffect(() => {
     getCurrentUser()
@@ -118,12 +119,16 @@ const HomePage = () => {
           const wlData = await getListById(wl.id);
           const ids = new Set((wlData.data.movies || []).map((m) => m.id));
           setWatchlistSet(ids);
-        } catch (e) {
+        } catch {
           setWatchlistSet(new Set());
         }
       })
       .catch(() => setMe(null));
   }, []);
+
+  const applyFilters = () => {
+    setApplyTick((v) => v + 1);
+  };
 
   const toggleWatchLater = async (movieId, inWatchlist) => {
     if (!me || !watchlistId) return;
@@ -205,7 +210,7 @@ const HomePage = () => {
               <option value="rating">Рейтинг</option>
               <option value="votes">Популярность</option>
             </select>
-            <button onClick={fetchMovies}>Применить</button>
+            <button onClick={applyFilters}>Применить</button>
           </div>
 
           <ul className="movie-list">
@@ -261,70 +266,61 @@ const HomePage = () => {
                             </div>
                         </div>
 
-                        {/* 4. Рейтинг */}
-                        <div className="rating">
-                            <span className="rating-value">
-                                {combinedRating}
-                            </span>
-                            <div className="votes">
-                              {movie.sum_votes ? movie.sum_votes.toLocaleString() : '0'}
-                              {reviewsCount ? ` • отзывов: ${reviewsCount}` : ''}
-                            </div>
-                        </div>
-
-                        {/* 5. Действия (Кнопки) */}
-                        <div className="actions" style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
-                            {me ? (
-                              <button
-                                className={`btn-watch-later ${inWatchlist ? 'in-list' : ''}`}
-                                disabled={pending}
-                                onClick={() => toggleWatchLater(movie.id, inWatchlist)}
-                              >
-                                {inWatchlist ? '✓ В списке' : '+ Буду смотреть'}
-                              </button>
-                            ) : (
-                              <Link to="/login" className="btn-watch-later">+ Буду смотреть</Link>
+                        {/* 4. Рейтинг и кнопки */}
+                        <div className="actions">
+                          <div className="rating">
+                              <span className="rating-value">
+                                  {combinedRating}
+                              </span>
+                              <div className="votes">
+                                {movie.sum_votes ? movie.sum_votes.toLocaleString() : '0'}
+                                {reviewsCount ? ` • отзывов: ${reviewsCount}` : ''}
+                              </div>
+                          </div>
+                          {me ? (
+                            <button
+                              className={`btn-watch-later ${inWatchlist ? 'in-list' : ''}`}
+                              disabled={pending}
+                              onClick={() => toggleWatchLater(movie.id, inWatchlist)}
+                            >
+                              {inWatchlist ? '✓ В списке' : '+ Буду смотреть'}
+                            </button>
+                          ) : (
+                            <Link to="/login" className="btn-watch-later">+ Буду смотреть</Link>
+                          )}
+                          <div className="stars">
+                            <button
+                              className="star-btn"
+                              style={{
+                                color: userRatings[movie.id] ? '#f2c94c' : '#9aa0b5'
+                              }}
+                              onClick={() => setActiveRatingMovie(activeRatingMovie === movie.id ? null : movie.id)}
+                              title="Поставить оценку"
+                            >
+                              ★
+                            </button>
+                            {activeRatingMovie === movie.id && (
+                              <div className="rating-popover">
+                                {[...Array(10)].map((_, i) => {
+                                  const starVal = i + 1;
+                                  const rated = userRatings[movie.id] || 0;
+                                  return (
+                                    <button
+                                      key={starVal}
+                                      className="star-btn"
+                                      style={{
+                                        color: starVal <= rated ? '#f2c94c' : '#9aa0b5'
+                                      }}
+                                      onClick={() => submitQuickRating(movie.id, starVal)}
+                                      title={`Оценить на ${starVal}`}
+                                    >
+                                      ★
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             )}
-                            <div className="stars" style={{position:'relative'}}>
-                              <button
-                                className="star-btn"
-                                style={{
-                                  padding:'0 6px',
-                                  fontSize:'16px',
-                                  lineHeight:'1.2',
-                                  color: userRatings[movie.id] ? '#f2c94c' : '#9aa0b5'
-                                }}
-                                onClick={() => setActiveRatingMovie(activeRatingMovie === movie.id ? null : movie.id)}
-                                title="Поставить оценку"
-                              >
-                                ★
-                              </button>
-                              {activeRatingMovie === movie.id && (
-                                <div className="rating-popover" style={{position:'absolute', top:'28px', left:0, background:'#11141d', border:'1px solid #2a2f3f', borderRadius:'8px', padding:'6px', display:'flex', gap:'4px', zIndex:5}}>
-                                  {[...Array(10)].map((_, i) => {
-                                    const starVal = i + 1;
-                                    const rated = userRatings[movie.id] || 0;
-                                    return (
-                                      <button
-                                        key={starVal}
-                                        className="star-btn"
-                                        style={{
-                                          padding:'2px 6px',
-                                          fontSize:'14px',
-                                          lineHeight:'1.2',
-                                          color: starVal <= rated ? '#f2c94c' : '#9aa0b5'
-                                        }}
-                                        onClick={() => submitQuickRating(movie.id, starVal)}
-                                        title={`Оценить на ${starVal}`}
-                                      >
-                                        ★
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                            <span className="icon">•••</span>
+                          </div>
                         </div>
                     </li>
                     )
@@ -333,29 +329,7 @@ const HomePage = () => {
           </ul>
         </div>
 
-        {/* === САЙДБАР (ПРАВАЯ КОЛОНКА) === */}
-        <div className="sidebar">
-            <h3>Популярные списки</h3>
-            <div className="sidebar-list">
-                {[...Array(5)].map((_, i) => (
-                    <div className="sidebar-item" key={i}>
-                        <div className="sidebar-details">
-                            <h5>Самые популярные фильмы</h5>
-                            <p>Фильмы с наибольшим количеством просмотров на сайте</p>
-                            <p>100 фильмов</p>
-                        </div>
-                        <div
-                            className="sidebar-poster"
-                            style={{
-                                backgroundImage: `url(https://placehold.co/80x110/333333/ffffff?text=Poster)`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center'
-                            }}
-                        ></div>
-                    </div>
-                ))}
-            </div>
-        </div>
+        {/* Сайдбар убран по запросу пользователя */}
       </div>
     </main>
   );

@@ -24,6 +24,8 @@ export const searchMovies = (query) => api.get('/movies', { params: { q: query }
 export const login = (credentials) => api.post('/users/login', credentials);
 export const register = (payload) => api.post('/users/register', payload);
 export const getCurrentUser = () => api.get('/users/me');
+export const forgotPassword = (payload) => api.post('/users/forgot-password', payload);
+export const resetPassword = (payload) => api.post('/users/reset-password', payload);
 
 // Отзывы
 export const getMovieReviews = (movieId) => api.get(`/reviews/movie/${movieId}`);
@@ -39,6 +41,8 @@ export const addMoviesToList = (listId, movieIds) =>
     api.post(`/lists/${listId}/movies`, { movie_ids: movieIds });
 export const removeMoviesFromList = (listId, movieIds) =>
     api.delete(`/lists/${listId}/movies`, { data: { movie_ids: movieIds } });
+export const updateList = (listId, payload) => api.put(`/lists/${listId}`, payload);
+export const deleteList = (listId) => api.delete(`/lists/${listId}`);
 
 // Watchlist helper
 export const ensureWatchlist = async (userId) => {

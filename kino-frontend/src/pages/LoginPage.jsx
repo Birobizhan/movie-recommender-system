@@ -60,7 +60,7 @@ const LoginPage = () => {
           </div>
 
           <div className="form-links">
-            <Link to="#">Забыли пароль?</Link>
+            <Link to="/forgot-password">Забыли пароль?</Link>
             <Link to="/register">Еще нет аккаунта? Регистрация</Link>
           </div>
 

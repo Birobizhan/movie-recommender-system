@@ -295,7 +295,7 @@ def process_file(filepath: Path, start_line: int = 1):
         session.close()
 
 def main():
-    folder = Path("genre_with_info")
+    folder = Path("genre_for_db")
     if not folder.exists():
         print(f"Папка {folder} не найдена!")
         return
@@ -311,6 +311,7 @@ def main():
         process_file(csv_file, start_line=1)
 
     print("\n✅ Обработка завершена.")
+
 
 if __name__ == "__main__":
     main()

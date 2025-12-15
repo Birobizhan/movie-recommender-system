@@ -65,43 +65,47 @@ const getDirectorName = (directorData) => {
 };
 // ----------------------------------------------------
 
-// --- БЕЗОПАСНОЕ ИЗВЛЕЧЕНИЕ АКТЕРОВ (ИСПРАВЛЕНО ДЛЯ ДВОЙНОЙ ВЛОЖЕННОСТИ) ---
+// --- Извлечение актеров (поддержка старого и нового формата) ---
 const renderCastList = (personsData) => {
-    if (!hasValue(personsData) || !Array.isArray(personsData)) return null;
+    if (!personsData || !Array.isArray(personsData) || personsData.length === 0) return null;
 
+    // Новый формат: список строк с именами
+    if (typeof personsData[0] === 'string') {
+      return personsData
+        .slice(0, 10)
+        .map((name, index) => (
+          <li key={index}>{name}</li>
+        ));
+    }
+
+    // Старый формат: массивы [id, name] c возможной двойной вложенностью
     let castList = personsData;
-
-    // Если структура [[[...]]], то нужно распаковать внешний массив
     if (Array.isArray(castList) && castList.length === 1 && Array.isArray(castList[0])) {
-        // Если castList[0] — это массив, содержащий другой массив, как в вашем первом примере
         if (Array.isArray(castList[0][0]) && castList[0].length === 1) {
-             castList = castList[0][0]; // [[[...]]] -> [...]
+             castList = castList[0][0];
         } else {
-             castList = castList[0]; // [[...]] -> [...]
+             castList = castList[0];
         }
     }
 
-    // После распаковки убеждаемся, что мы имеем дело с массивом [ID, Name]
     if (!Array.isArray(castList)) return null;
 
     return castList
       .map((person, index) => {
-        // Проверяем, что person - это массив [ID, Name]
         if (Array.isArray(person) && person.length >= 2) {
             const personId = person[0];
             const personName = person[1];
             return (
               <li key={personId || index}>
-                {/* Используем Link, даже если ID может быть undefined, для целостности UI */}
                 <Link to={personId ? `/person/${personId}` : '#'}>{personName || 'Неизвестный актер'}</Link>
               </li>
             );
         }
         return null;
       })
-      .filter(item => item) // Убираем null-элементы
-      .slice(0, 10); // Ограничиваем список до 10 актеров
-}
+      .filter(Boolean)
+      .slice(0, 10);
+};
 
 
 const MoviePage = () => {
@@ -117,6 +121,8 @@ const MoviePage = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [watchlistId, setWatchlistId] = useState(null);
   const [inWatchlist, setInWatchlist] = useState(false);
+  const [showListPicker, setShowListPicker] = useState(false);
+  const [listMembership, setListMembership] = useState({});
 
   useEffect(() => {
     setLoading(true);
@@ -149,7 +155,15 @@ const MoviePage = () => {
         ]);
       })
       .then(async ([listsResp, wl]) => {
-        setMyLists(listsResp.data || []);
+        const lists = listsResp.data || [];
+        setMyLists(lists);
+        const currentMovieId = Number(id);
+        const membership = {};
+        lists.forEach((l) => {
+          const ids = (l.movies || []).map((m) => m.id);
+          membership[l.id] = ids.includes(currentMovieId);
+        });
+        setListMembership(membership);
         setWatchlistId(wl.id);
         try {
           const wlData = await getListById(wl.id);
@@ -245,6 +259,25 @@ const MoviePage = () => {
     }
   };
 
+  const toggleListMembership = async (listId) => {
+    if (!currentUser) return;
+    const movieIdNum = Number(id);
+    const isIn = !!listMembership[listId];
+    try {
+      if (isIn) {
+        await removeMoviesFromList(listId, [movieIdNum]);
+      } else {
+        await addMoviesToList(listId, [movieIdNum]);
+      }
+      setListMembership((prev) => ({ ...prev, [listId]: !isIn }));
+      if (listId === watchlistId) {
+        setInWatchlist(!isIn);
+      }
+    } catch (err) {
+      console.error('toggle list membership error', err);
+    }
+  };
+
   return (
     <main>
         <div className="page-container movie-detail-page">
@@ -275,6 +308,34 @@ const MoviePage = () => {
                           >
                             {inWatchlist ? '✓ В списке' : '+ Буду смотреть'}
                           </button>
+                        )}
+                        {currentUser && myLists.length > 0 && (
+                          <div style={{marginTop:'8px'}}>
+                            <button
+                              type="button"
+                              className="btn-watch-later"
+                              onClick={() => setShowListPicker((v) => !v)}
+                            >
+                              Добавить в списки
+                            </button>
+                            {showListPicker && (
+                              <div className="list-picker">
+                                <div className="list-picker-header">Выберите списки</div>
+                                <div className="list-picker-body">
+                                  {myLists.map((lst) => (
+                                    <div className="list-picker-row" key={lst.id}>
+                                      <span className="list-picker-title">{lst.title}</span>
+                                      <input
+                                        type="checkbox"
+                                        checked={!!listMembership[lst.id]}
+                                        onChange={() => toggleListMembership(lst.id)}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                     </div>
                 </div>

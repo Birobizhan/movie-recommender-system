@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models.user import User
-from app.schemas.user import UserBase, UserCreate, UserResponse, UserProfile, UserLogin, Token, UserUpdate, UserPasswordUpdate
+from app.schemas.user import UserBase, UserCreate, UserResponse, UserProfile, UserLogin, Token, UserUpdate, UserPasswordUpdate, PasswordResetRequest, PasswordResetConfirm
 from app.services import UserService
 from app.repositories import UserRepository
 from app.models.review import Review
@@ -29,6 +29,34 @@ def login_user(user_data: UserLogin, db: Session = Depends(deps.get_db)):
         return {**result, "user": UserResponse.model_validate(result["user"])}
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+
+
+@router.post("/forgot-password")
+def forgot_password(reset_request: PasswordResetRequest, db: Session = Depends(deps.get_db)):
+    """
+    Запрос на сброс пароля.
+    В реальном приложении здесь должна быть отправка email с токеном.
+    Для демонстрации возвращаем токен в ответе.
+    """
+    try:
+        service = UserService(db)
+        result = service.request_password_reset(reset_request)
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.post("/reset-password")
+def reset_password(reset_confirm: PasswordResetConfirm, db: Session = Depends(deps.get_db)):
+    """
+    Установка нового пароля по токену сброса.
+    """
+    try:
+        service = UserService(db)
+        result = service.reset_password(reset_confirm)
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.get("/me", response_model=UserResponse)

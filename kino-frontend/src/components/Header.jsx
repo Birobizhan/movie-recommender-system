@@ -15,10 +15,15 @@ const Header = () => {
   }, [location.search]);
 
   useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    if (!token) {
+      setMe(null);
+      return;
+    }
     getCurrentUser()
       .then((resp) => setMe(resp.data))
       .catch(() => setMe(null));
-  }, []);
+  }, [location.pathname]);
 
   const onSearchSubmit = (e) => {
     e.preventDefault();
@@ -35,42 +40,42 @@ const Header = () => {
 
   return (
     <header>
-        <Link to="/" className="logo">MovieHub</Link>
-        <form className="search-container" onSubmit={onSearchSubmit}>
-            <input
-              type="text"
-              placeholder="Поиск по названию"
-              value={query}
-              onChange={(e)=>setQuery(e.target.value)}
-            />
-            <button type="submit">🔍</button>
-        </form>
-        <nav>
-            <Link to="/">Фильмы</Link>
-            <Link to="/lists">Списки</Link>
-            <div className="profile-link">
-              {me ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position:'relative' }}>
-                  <button className="profile-icon-btn" onClick={()=>setProfileOpen((v)=>!v)}>
-                    <span className="profile-icon" />
+      <Link to="/" className="logo">MovieHub</Link>
+      <form className="search-container" onSubmit={onSearchSubmit}>
+        <input
+          type="text"
+          placeholder="Поиск по названию"
+          value={query}
+          onChange={(e)=>setQuery(e.target.value)}
+        />
+        <button type="submit">🔍</button>
+      </form>
+      <nav>
+        <Link to="/">Фильмы</Link>
+        <Link to="/lists">Списки</Link>
+        <div className="profile-link">
+          {me ? (
+            <div className="profile-container">
+              <button className="profile-icon-btn" onClick={()=>setProfileOpen((v)=>!v)}>
+                <span className="profile-icon" />
+              </button>
+              <span className="profile-name">{me.username || me.email}</span>
+              {profileOpen && (
+                <div className="profile-dropdown">
+                  <button onClick={logout} className="link-button">
+                    Выйти
                   </button>
-                  <span className="profile-name">{me.username || me.email}</span>
-                  {profileOpen && (
-                    <div className="profile-dropdown" style={{minWidth:'160px'}}>
-                      <button onClick={logout} className="link-button" style={{width:'100%', color:'#fff', fontSize:'15px', padding:'10px 12px', textAlign:'left'}}>
-                        Выйти
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{display: 'flex', gap: '12px'}}>
-                    <Link to="/login">Войти</Link>
-                    <Link to="/register">Регистрация</Link>
                 </div>
               )}
             </div>
-        </nav>
+          ) : (
+            <div className="auth-links">
+              <Link to="/login">Войти</Link>
+              <Link to="/register">Регистрация</Link>
+            </div>
+          )}
+        </div>
+      </nav>
     </header>
   );
 };
