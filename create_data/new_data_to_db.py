@@ -109,7 +109,7 @@ def prepare_movie_record(raw_data, ratings_info):
     """Формирует запись фильма для вставки в БД."""
     data = raw_data
 
-    if data.get('type') != 'movie':
+    if data.get('type') == 'tv-series' or data.get('type') == 'movie':
         print(f"    Пропуск: тип = {data.get('type')}, не 'movie'")
         return None
 
@@ -276,7 +276,7 @@ def process_file(filepath: Path, start_line: int = 1):
                 continue
 
             # Проверяем тип
-            if data.get('type') != 'movie':
+            if data.get('type') == 'tv-series' or data.get('type') == 'movie':
                 print(f"  ⚠️ Пропуск ID {film_id}: тип = {data.get('type')}")
                 continue
 
