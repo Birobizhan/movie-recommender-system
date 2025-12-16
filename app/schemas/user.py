@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 from app.models.user import UserRole
 
 class UserBase(BaseModel):
@@ -43,6 +43,11 @@ class UserProfile(UserResponse):
     reviews_count: int
     lists_count: int
     average_rating: Optional[float] = None
+
+
+class UserProfileExtended(UserProfile):
+    recent_watched_movies: list[Any] = []
+    favorite_genres: list[dict[str, Any]] = []
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr

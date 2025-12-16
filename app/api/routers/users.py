@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models.user import User
-from app.schemas.user import UserBase, UserCreate, UserResponse, UserProfile, UserLogin, Token, UserUpdate, UserPasswordUpdate, PasswordResetRequest, PasswordResetConfirm
+from app.schemas.user import UserBase, UserCreate, UserResponse, UserProfile, UserProfileExtended, UserLogin, Token, UserUpdate, UserPasswordUpdate, PasswordResetRequest, PasswordResetConfirm
 from app.services import UserService
 from app.repositories import UserRepository
 from app.models.review import Review
@@ -65,6 +65,41 @@ def get_current_user_info(
     db: Session = Depends(deps.get_db),
 ):
     return current_user
+
+
+@router.get("/me/profile", response_model=UserProfileExtended)
+def get_current_user_profile(
+    current_user: User = Depends(deps.get_current_user),
+    db: Session = Depends(deps.get_db),
+):
+    """
+    Получает расширенный профиль текущего пользователя с последними просмотренными фильмами
+    и любимыми жанрами.
+    """
+    try:
+        service = UserService(db)
+        profile_data = service.get_extended_profile(current_user.id)
+        
+        # Формируем ответ
+        user_data = UserResponse.model_validate(profile_data["user"])
+        # Преобразуем MovieResponse объекты в словари
+        recent_movies = []
+        for movie in profile_data["recent_watched_movies"]:
+            if hasattr(movie, 'model_dump'):
+                recent_movies.append(movie.model_dump())
+            else:
+                recent_movies.append(movie)
+        
+        return UserProfileExtended(
+            **user_data.model_dump(),
+            reviews_count=profile_data["reviews_count"],
+            lists_count=profile_data["lists_count"],
+            average_rating=profile_data["average_rating"],
+            recent_watched_movies=recent_movies,
+            favorite_genres=profile_data["favorite_genres"],
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
 @router.put("/me", response_model=UserResponse)

@@ -24,6 +24,8 @@ export const searchMovies = (query) => api.get('/movies', { params: { q: query }
 export const login = (credentials) => api.post('/users/login', credentials);
 export const register = (payload) => api.post('/users/register', payload);
 export const getCurrentUser = () => api.get('/users/me');
+export const getUserProfile = () => api.get('/users/me/profile');
+export const updatePassword = (payload) => api.put('/users/me/password', payload);
 export const forgotPassword = (payload) => api.post('/users/forgot-password', payload);
 export const resetPassword = (payload) => api.post('/users/reset-password', payload);
 

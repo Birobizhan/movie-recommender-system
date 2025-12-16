@@ -62,6 +62,9 @@ const Header = () => {
               <span className="profile-name">{me.username || me.email}</span>
               {profileOpen && (
                 <div className="profile-dropdown">
+                  <Link to="/profile" className="link-button" onClick={() => setProfileOpen(false)}>
+                    Профиль
+                  </Link>
                   <button onClick={logout} className="link-button">
                     Выйти
                   </button>

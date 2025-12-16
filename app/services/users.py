@@ -1,11 +1,18 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from collections import Counter
+from typing import Dict, Any, List
 
 from app.auth.password import hash_password, verify_password
 from app.auth.jwt import create_access_token, create_password_reset_token, verify_password_reset_token
 from app.models.user import User
+from app.models.list import MovieList
+from app.models.movie import Movie
+from app.models.review import Review
 from app.repositories.users import UserRepository
 from app.repositories.lists import ListRepository
 from app.schemas.user import UserCreate, UserLogin, UserUpdate, UserPasswordUpdate, PasswordResetRequest, PasswordResetConfirm
+from app.schemas.movie import MovieResponse
 
 
 class UserService:
@@ -145,3 +152,61 @@ class UserService:
             if "expired" in str(e).lower() or "exp" in str(e).lower():
                 raise ValueError("Password reset token has expired")
             raise ValueError(f"Invalid or expired token: {str(e)}")
+
+    def get_extended_profile(self, user_id: int) -> Dict[str, Any]:
+        """
+        Получает расширенный профиль пользователя с последними просмотренными фильмами
+        и любимыми жанрами.
+        """
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise LookupError("User not found")
+
+        # Получаем список "Просмотренные"
+        watched_list = (
+            self.db.query(MovieList)
+            .filter(MovieList.owner_id == user_id, MovieList.title == "Просмотренные")
+            .first()
+        )
+
+        # Получаем последние просмотренные фильмы (последние 10)
+        recent_watched = []
+        if watched_list and watched_list.movies:
+            # Получаем фильмы из списка
+            # Берем последние 10 фильмов (предполагаем, что последние добавленные - в конце списка)
+            all_movies = list(watched_list.movies)
+            movies = all_movies[-10:] if len(all_movies) > 10 else all_movies
+            # Разворачиваем список, чтобы последние добавленные были первыми
+            movies = list(reversed(movies))
+            recent_watched = [MovieResponse.model_validate(movie) for movie in movies]
+
+        # Получаем любимые жанры на основе просмотренных фильмов
+        favorite_genres = []
+        if watched_list and watched_list.movies:
+            # Собираем все жанры из просмотренных фильмов
+            all_genres = []
+            for movie in watched_list.movies:
+                if movie.genres:
+                    all_genres.extend(movie.genres)
+            
+            # Подсчитываем частоту жанров
+            genre_counts = Counter(all_genres)
+            
+            # Сортируем по частоте и берем топ-5
+            top_genres = genre_counts.most_common(5)
+            favorite_genres = [{"genre": genre, "count": count} for genre, count in top_genres]
+
+        # Получаем базовую статистику
+        reviews_count = self.db.query(Review).filter(Review.author_id == user_id).count()
+        lists_count = self.db.query(MovieList).filter(MovieList.owner_id == user_id).count()
+        avg_rating_result = self.db.query(func.avg(Review.rating)).filter(Review.author_id == user_id).scalar()
+        avg_rating = float(avg_rating_result) if avg_rating_result is not None else None
+
+        return {
+            "user": user,
+            "reviews_count": reviews_count,
+            "lists_count": lists_count,
+            "average_rating": avg_rating,
+            "recent_watched_movies": recent_watched,
+            "favorite_genres": favorite_genres,
+        }
