@@ -20,3 +20,6 @@ API документация доступна по адресу http://localhost
 Затем чтобы остановить контетйнеры напишите команду:
 
 ```docker-compose stop```
+
+Чтобы заполнить бд данными выполните команду:
+```cat backup_postgres.sql | docker exec -i db psql -U user -d movie_recommender```
