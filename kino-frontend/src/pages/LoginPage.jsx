@@ -10,6 +10,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
   const from = location.state?.from || '/';
 
@@ -64,6 +65,11 @@ const LoginPage = () => {
             <Link to="/register">Еще нет аккаунта? Регистрация</Link>
           </div>
 
+          {successMessage && (
+            <p style={{ color: '#51cf66', marginBottom: 12, padding: '10px', backgroundColor: '#1a3a1a', borderRadius: '4px' }}>
+              {successMessage}
+            </p>
+          )}
           {error && <p style={{ color: 'red', marginBottom: 12 }}>{error}</p>}
 
           <button type="submit" className="submit-btn" disabled={loading}>

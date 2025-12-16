@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getUserProfile, updatePassword } from '../api';
+import { getUserProfile, updatePassword, setAuthToken } from '../api';
 import '../style.css';
 
 const ProfilePage = () => {
@@ -59,15 +59,20 @@ const ProfilePage = () => {
         old_password: passwordData.old_password,
         new_password: passwordData.new_password,
       });
-      setPasswordSuccess('Пароль успешно изменен');
+      setPasswordSuccess('Пароль успешно изменен. Вы будете перенаправлены на страницу входа...');
       setPasswordData({
         old_password: '',
         new_password: '',
         confirm_password: '',
       });
+      // Очищаем токен и перенаправляем на страницу входа через 2 секунды
       setTimeout(() => {
-        setShowPasswordForm(false);
-        setPasswordSuccess('');
+        setAuthToken(null);
+        navigate('/login', { 
+          state: { 
+            message: 'Пароль успешно изменен. Пожалуйста, войдите с новым паролем.' 
+          } 
+        });
       }, 2000);
     } catch (err) {
       const msg = err.response?.data?.detail || 'Не удалось изменить пароль';
