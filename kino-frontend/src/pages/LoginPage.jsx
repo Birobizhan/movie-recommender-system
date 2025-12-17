@@ -24,11 +24,28 @@ const LoginPage = () => {
     console.log('[OAuth] Callback params:', { token: token ? 'present' : 'missing', success, oauthError });
 
     if (token && success === 'true') {
-      console.log('[OAuth] Setting auth token and redirecting');
-      setAuthToken(token);
-      // Полная перезагрузка страницы, чтобы Header подхватил токен
-      const redirectUrl = from === '/' ? '/' : from;
-      window.location.href = redirectUrl;
+      console.log('[OAuth] Token received, length:', token.length);
+      // Декодируем токен, если он был закодирован
+      const decodedToken = decodeURIComponent(token);
+      console.log('[OAuth] Setting auth token');
+      
+      // Сохраняем токен в localStorage и устанавливаем в axios
+      setAuthToken(decodedToken);
+      
+      // Проверяем, что токен сохранился
+      const savedToken = localStorage.getItem('access_token');
+      console.log('[OAuth] Token saved:', savedToken ? 'yes' : 'no', savedToken ? `length: ${savedToken.length}` : '');
+      
+      // Очищаем URL параметры
+      window.history.replaceState({}, '', '/login');
+      
+      // Небольшая задержка, чтобы токен точно сохранился
+      setTimeout(() => {
+        // Полная перезагрузка страницы, чтобы Header подхватил токен
+        const redirectUrl = from === '/' ? '/' : from;
+        console.log('[OAuth] Redirecting to:', redirectUrl);
+        window.location.href = redirectUrl;
+      }, 100);
       return;
     } else if (oauthError) {
       const errorMessages = {

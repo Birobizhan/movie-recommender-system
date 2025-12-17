@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 from app.api import deps
 from app.services.oauth import OAuthService
 from app.core.config import YANDEX_CLIENT_ID, YANDEX_REDIRECT_URI, FRONTEND_URL
@@ -64,11 +64,14 @@ async def yandex_callback(
         user = oauth_service.get_or_create_user_from_yandex(yandex_data)
         token_data = oauth_service.create_oauth_token(user)
         
+        # Правильно кодируем токен для URL
+        encoded_token = quote(token_data['access_token'], safe='')
+        
         # Перенаправляем на фронтенд с токеном в URL параметре
         # Фронтенд должен будет сохранить токен и перенаправить пользователя
-        return RedirectResponse(
-            url=f"{FRONTEND_URL}/login?token={token_data['access_token']}&success=true"
-        )
+        redirect_url = f"{FRONTEND_URL}/login?token={encoded_token}&success=true"
+        print(f"[OAuth] Redirecting to: {redirect_url[:100]}...")
+        return RedirectResponse(url=redirect_url)
     except Exception as e:
         print(f"Ошибка при обработке OAuth callback: {e}")
         return RedirectResponse(
