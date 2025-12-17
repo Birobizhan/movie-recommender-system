@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 import httpx
 from app.models.user import User
 from app.repositories.users import UserRepository
+from app.repositories.lists import ListRepository
 from app.auth.jwt import create_access_token
 from app.core.config import YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET, YANDEX_REDIRECT_URI
 
@@ -11,6 +12,7 @@ class OAuthService:
     def __init__(self, db: Session):
         self.db = db
         self.user_repo = UserRepository(db)
+        self.list_repo = ListRepository(db)
 
     async def get_yandex_user_info(self, code: str) -> Optional[Dict[str, Any]]:
         """Получает информацию о пользователе Yandex по коду авторизации."""
@@ -93,6 +95,18 @@ class OAuthService:
         )
         print(
             f"[OAuth Service] New user created: id={new_user.id}, username={new_user.username}, email={new_user.email}")
+
+        # Создаем базовые списки, как при обычной регистрации
+        default_lists = ["Просмотренные", "Буду смотреть", "Любимые"]
+        for title in default_lists:
+            try:
+                self.list_repo.create_list(
+                    title=title, description=None, owner_id=new_user.id)
+                print(f"[OAuth Service] Created default list: {title}")
+            except Exception as e:
+                print(f"[OAuth Service] Error creating list {title}: {e}")
+                self.db.rollback()
+
         return new_user
 
     def create_oauth_token(self, user: User) -> Dict[str, Any]:
