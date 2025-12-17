@@ -53,15 +53,19 @@ async def yandex_callback(
         )
     
     try:
+        print(f"[OAuth] Callback received, code: {code[:20] if code else 'None'}...")
         oauth_service = OAuthService(db)
         yandex_data = await oauth_service.get_yandex_user_info(code)
         
         if not yandex_data:
+            print("[OAuth] Failed to get user info from Yandex")
             return RedirectResponse(
                 url=f"{FRONTEND_URL}/login?error=oauth_failed"
             )
         
+        print(f"[OAuth] Yandex data received: id={yandex_data.get('id')}, email={yandex_data.get('default_email')}, login={yandex_data.get('login')}")
         user = oauth_service.get_or_create_user_from_yandex(yandex_data)
+        print(f"[OAuth] User processed: id={user.id}, username={user.username}, email={user.email}")
         token_data = oauth_service.create_oauth_token(user)
         
         # Правильно кодируем токен для URL
