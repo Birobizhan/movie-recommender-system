@@ -65,6 +65,7 @@ const Header = () => {
       <nav>
         <Link to="/">Фильмы</Link>
         <Link to="/lists">Списки</Link>
+        <Link to="/movie-bot">Подобрать фильм</Link>
         <div className="profile-link">
           {me ? (
             <div className="profile-container">

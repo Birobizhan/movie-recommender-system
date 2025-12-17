@@ -847,3 +847,93 @@ main.login-page-main {
 .cast-list li a:hover {
     text-decoration: underline;
 }
+
+/* --- Стили для страницы бота подбора фильмов --- */
+.bot-step {
+    margin-top: 30px;
+    padding: 30px;
+    background-color: #1f1f1f;
+    border-radius: 12px;
+    border: 1px solid #3a3a3d;
+}
+
+.bot-step h2 {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+    color: #f0f0f0;
+    text-align: center;
+}
+
+.bot-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.bot-option-btn {
+    padding: 14px 20px;
+    background-color: #2f2f37;
+    color: #f0f0f0;
+    border: 1px solid #3a3a3d;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-align: center;
+}
+
+.bot-option-btn:hover:not(:disabled) {
+    background-color: #3a3a3d;
+    border-color: #6ab4ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(106, 180, 255, 0.2);
+}
+
+.bot-option-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.bot-option-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.loading-text {
+    text-align: center;
+    color: #6ab4ff;
+    margin-top: 20px;
+    font-size: 1.1rem;
+}
+
+.error-text {
+    color: #ff6b6b;
+    text-align: center;
+    margin: 20px 0;
+    padding: 12px;
+    background-color: rgba(255, 107, 107, 0.1);
+    border-radius: 8px;
+    border: 1px solid #ff6b6b;
+}
+
+.recommended-movies {
+    margin-top: 30px;
+}
+
+.no-results {
+    text-align: center;
+    color: #9aa0b5;
+    padding: 30px;
+    font-size: 1.1rem;
+}
+
+.bot-actions {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.bot-actions .bot-option-btn {
+    max-width: 300px;
+    margin: 0 auto;
+}

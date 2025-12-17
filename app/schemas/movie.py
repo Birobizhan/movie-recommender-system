@@ -74,3 +74,11 @@ class MovieCreate(BaseModel):
     director: Optional[list[str]] = None
     world_premiere: Optional[date] = None
     combined_rating: Optional[float] = 0.0
+
+
+class MovieRecommendationRequest(BaseModel):
+    main_genre: str = Field(..., description="Основной жанр")
+    subgenre: str = Field(..., description="Поджанр")
+    subgenre_detail: str = Field(..., description="Детализация поджанра")
+    time_period: str = Field(..., description="Временной период")
+    limit: int = Field(20, ge=1, le=50, description="Количество рекомендаций")

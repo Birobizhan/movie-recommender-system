@@ -66,4 +66,7 @@ export const setAuthToken = (token) => {
     }
 };
 
+// Рекомендации фильмов на основе ответов бота
+export const recommendMovies = (payload) => api.post('/movies/recommend', payload);
+
 export default api;
