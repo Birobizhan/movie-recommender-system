@@ -3,8 +3,10 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.movie import Movie
+from app.models.analytics import MovieViewLog, SearchLog
 from app.repositories.movies import MovieRepository
 from app.schemas.movie import MovieCreate
+from app.models.user import User
 
 
 class MovieService:
@@ -43,8 +45,9 @@ class MovieService:
         min_rating: Optional[float] = None,
         sort_by: Optional[str] = None,
         q: Optional[str] = None,
+        current_user: User | None = None
     ) -> List[Movie]:
-        return self.movie_repo.list_movies(
+        movies = self.movie_repo.list_movies(
             skip=skip,
             limit=limit,
             genre=genre,
@@ -53,13 +56,65 @@ class MovieService:
             order_by_top=True,
             sort_by=sort_by,
             search_q=q,
+
         )
+        if q is not None:
+            # Логируем поиск
+            try:
+                log = SearchLog(
+                    query=q.strip()[:255],
+                    has_results=bool(movies),
+                    results_count=len(movies),
+                    user_id=current_user.id if current_user else None,
+                )
+                self.db.add(log)
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+        return movies
 
-    def search(self, *, q: str, skip: int = 0, limit: int = 50) -> List[Movie]:
-        return self.movie_repo.search_movies(q=q, skip=skip, limit=limit)
+    def search(
+        self,
+        *,
+        q: str,
+        skip: int = 0,
+        limit: int = 50,
+        current_user: User | None = None,
+    ) -> List[Movie]:
+        movies = self.movie_repo.search_movies(q=q, skip=skip, limit=limit)
 
-    def get_movie(self, movie_id: int) -> Movie | None:
-        return self.movie_repo.get_movie(movie_id)
+        # Логируем поиск
+        try:
+            log = SearchLog(
+                query=q.strip()[:255],
+                has_results=bool(movies),
+                results_count=len(movies),
+                user_id=current_user.id if current_user else None,
+            )
+            self.db.add(log)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+
+        return movies
+
+    def get_movie(
+        self,
+        movie_id: int,
+        current_user: User | None = None,
+    ) -> Movie | None:
+        movie = self.movie_repo.get_movie(movie_id)
+        if movie:
+            try:
+                log = MovieViewLog(
+                    movie_id=movie.id,
+                    user_id=current_user.id if current_user else None,
+                )
+                self.db.add(log)
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+        return movie
 
     def create_movie(self, movie_in: MovieCreate) -> Movie:
         existing = self.movie_repo.get_by_kp_id(movie_in.kp_id)

@@ -25,11 +25,23 @@ const Header = () => {
       .catch(() => setMe(null));
   }, [location.pathname]);
 
-  const onSearchSubmit = (e) => {
-    e.preventDefault();
-    const search = query.trim();
+  const applySearch = (value) => {
+    const search = value.trim();
     const next = search ? `/?q=${encodeURIComponent(search)}` : '/';
     navigate(next);
+  };
+
+  const onSearchSubmit = (e) => {
+    e.preventDefault();
+    applySearch(query);
+  };
+
+  const onSearchChange = (e) => {
+    setQuery(e.target.value);
+  };
+
+  const onSearchBlur = (e) => {
+    applySearch(e.target.value);
   };
 
   const logout = () => {
@@ -46,9 +58,9 @@ const Header = () => {
           type="text"
           placeholder="Поиск по названию"
           value={query}
-          onChange={(e)=>setQuery(e.target.value)}
+          onChange={onSearchChange}
+          onBlur={onSearchBlur}
         />
-        <button type="submit">🔍</button>
       </form>
       <nav>
         <Link to="/">Фильмы</Link>

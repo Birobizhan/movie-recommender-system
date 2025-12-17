@@ -104,6 +104,12 @@ const HomePage = () => {
     setSearch(qParam);
   }, [searchParams]);
 
+  // Авто-поиск по вводу в хедере: при смене search сразу перезагружаем фильмы
+  useEffect(() => {
+    fetchMovies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
   useEffect(() => {
     fetchMovies();
     // eslint-disable-next-line react-hooks/exhaustive-deps

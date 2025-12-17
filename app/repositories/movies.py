@@ -42,6 +42,7 @@ class MovieRepository:
                 query = query.filter(rating_column >= min_rating)
         if search_q:
             query = query.filter(Movie.title.ilike(f"%{search_q}%"))
+
         query = query.filter(Movie.sum_votes >= 50_000)
 
         if order_by_top or sort_by:

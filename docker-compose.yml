@@ -30,6 +30,17 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
 
+  telegram_bot:
+    build: .
+    container_name: moviehub_telegram_bot
+    depends_on:
+      - backend
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ADMIN_USERNAMES: ${TELEGRAM_ADMIN_USERNAMES}
+      ADMIN_API_BASE_URL: http://backend:8000/api
+    command: ["python", "-m", "telegram_bot.bot"]
+
   frontend:
     build: ./kino-frontend
     container_name: moviehub_frontend

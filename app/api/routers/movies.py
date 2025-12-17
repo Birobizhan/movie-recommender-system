@@ -44,6 +44,7 @@ def get_top_250_movies(
     sort_by: Optional[str] = Query("rating", description="rating|year|title|votes"),
     q: Optional[str] = Query(None, description="поиск по названию"),
     db: Session = Depends(deps.get_db),
+    current_user: User | None = Depends(deps.get_optional_user)
 ):
     service = MovieService(db)
     return service.get_top_movies(
@@ -54,6 +55,7 @@ def get_top_250_movies(
         min_rating=min_rating,
         sort_by=sort_by,
         q=q,
+        current_user=current_user
     )
 
 
@@ -76,15 +78,20 @@ def search_movies(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(deps.get_db),
+    current_user: User | None = Depends(deps.get_optional_user),
 ):
     service = MovieService(db)
-    return service.search(q=q, skip=skip, limit=limit)
+    return service.search(q=q, skip=skip, limit=limit, current_user=current_user)
 
 
 @router.get("/{movie_id}", response_model=MovieResponse)
-def get_movie(movie_id: int, db: Session = Depends(deps.get_db)):
+def get_movie(
+    movie_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User | None = Depends(deps.get_optional_user),
+):
     service = MovieService(db)
-    movie = service.get_movie(movie_id)
+    movie = service.get_movie(movie_id, current_user=current_user)
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
     return movie
