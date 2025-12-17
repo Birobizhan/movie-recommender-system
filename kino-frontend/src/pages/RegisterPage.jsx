@@ -1,16 +1,42 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../api';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { register, setAuthToken } from '../api';
 import '../auth.css';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Обработка OAuth callback
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const success = searchParams.get('success');
+    const oauthError = searchParams.get('error');
+
+    if (token && success === 'true') {
+      setAuthToken(token);
+      navigate('/', { replace: true });
+    } else if (oauthError) {
+      const errorMessages = {
+        'oauth_cancelled': 'Авторизация через Yandex была отменена',
+        'no_code': 'Не получен код авторизации от Yandex',
+        'oauth_failed': 'Не удалось получить данные от Yandex',
+        'oauth_error': 'Ошибка при авторизации через Yandex',
+      };
+      setError(errorMessages[oauthError] || 'Ошибка авторизации');
+    }
+  }, [searchParams, navigate]);
+
+  const handleYandexLogin = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
+    window.location.href = `${apiUrl}/auth/yandex`;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,11 +123,7 @@ const RegisterPage = () => {
         </form>
 
         <div className="social-login">
-          <button className="social-btn google" type="button">
-            <span className="icon">G</span>
-            Продолжить с Google
-          </button>
-          <button className="social-btn yandex" type="button">
+          <button className="social-btn yandex" type="button" onClick={handleYandexLogin}>
             <span className="icon">Y</span>
             Продолжить с Yandex
           </button>
@@ -112,16 +134,3 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
-
-
-
-
-
-
-
-
-
-
-
-
-

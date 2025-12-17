@@ -190,7 +190,7 @@ main {
 /* --- Стили кнопок соц. сетей --- */
 .social-login {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     gap: 16px;
 }
 

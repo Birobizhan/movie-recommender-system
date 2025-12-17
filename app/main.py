@@ -10,6 +10,7 @@ from app.api.routers.movies import router as movies_router
 from app.api.routers.reviews import router as reviews_router
 from app.api.routers.lists import router as lists_router
 from app.api.routers.admin_stats import router as admin_stats_router
+from app.api.routers.oauth import router as oauth_router
 
 from app.db.session import get_db
 from app.log_to_db import log_page_view
@@ -43,6 +44,7 @@ app.include_router(movies_router, prefix="/api/movies", tags=["Movies"])
 app.include_router(reviews_router, prefix="/api/reviews", tags=["Reviews"])
 app.include_router(lists_router, prefix="/api/lists", tags=["Lists"])
 app.include_router(admin_stats_router, prefix="/api", tags=["Admin"])
+app.include_router(oauth_router, prefix="/api", tags=["OAuth"])
 
 
 @app.middleware("http")

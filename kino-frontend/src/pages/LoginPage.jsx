@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { login, setAuthToken } from '../api';
 import '../auth.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,31 @@ const LoginPage = () => {
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
   const from = location.state?.from || '/';
+
+  // Обработка OAuth callback
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const success = searchParams.get('success');
+    const oauthError = searchParams.get('error');
+
+    if (token && success === 'true') {
+      setAuthToken(token);
+      navigate(from, { replace: true });
+    } else if (oauthError) {
+      const errorMessages = {
+        'oauth_cancelled': 'Авторизация через Yandex была отменена',
+        'no_code': 'Не получен код авторизации от Yandex',
+        'oauth_failed': 'Не удалось получить данные от Yandex',
+        'oauth_error': 'Ошибка при авторизации через Yandex',
+      };
+      setError(errorMessages[oauthError] || 'Ошибка авторизации');
+    }
+  }, [searchParams, navigate, from]);
+
+  const handleYandexLogin = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
+    window.location.href = `${apiUrl}/auth/yandex`;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,11 +104,7 @@ const LoginPage = () => {
         </form>
 
         <div className="social-login">
-          <button className="social-btn google" type="button">
-            <span className="icon">G</span>
-            Продолжить с Google
-          </button>
-          <button className="social-btn yandex" type="button">
+          <button className="social-btn yandex" type="button" onClick={handleYandexLogin}>
             <span className="icon">Y</span>
             Продолжить с Yandex
           </button>
