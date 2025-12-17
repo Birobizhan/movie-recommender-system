@@ -14,8 +14,7 @@ const Footer = () => (
   }}>
     <div>© MovieHub, 2025</div>
     <div style={{display: 'flex', gap: '16px'}}>
-      <a href="/static/html/auth.html" style={{color: '#f0f0f0'}}>Вход</a>
-      <a href="/static/html/register.html" style={{color: '#f0f0f0'}}>Регистрация</a>
+      <a href="https://github.com/Birobizhan/movie-recommender-system" style={{color: '#f0f0f0'}}>Репозиторий</a>
       <a href="/api/docs" style={{color: '#f0f0f0'}}>API docs</a>
     </div>
   </footer>

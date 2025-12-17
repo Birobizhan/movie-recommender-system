@@ -6,7 +6,7 @@ from aiohttp import ClientResponseError, ClientError
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message, BotCommand
-from .lexicon import parse_status, parse_db
+from .lexicon import parse_status, parse_db, parse_full_report
 from .config import get_settings
 
 
@@ -18,19 +18,27 @@ ADMIN_COMMANDS = [
     BotCommand(command="start", description="Показать список команд"),
     BotCommand(command="commands", description="Показать список команд"),
     BotCommand(command="status", description="Проверить статус API"),
-    BotCommand(command="db_check", description="Проверить статус подключения к БД"),
+    BotCommand(command="db_check",
+               description="Проверить статус подключения к БД"),
     BotCommand(command="logs_errors", description="Последние ошибки в логах"),
-    BotCommand(command="top_movies", description="Топ-10 просматриваемых фильмов"),
+    BotCommand(command="top_movies",
+               description="Топ-10 просматриваемых фильмов"),
     BotCommand(command="new_reviews", description="Количество новых отзывов"),
-    BotCommand(command="search_stats_none", description="Топ 'пустых' поисков"),
+    BotCommand(command="search_stats_none",
+               description="Топ 'пустых' поисков"),
     BotCommand(command="top_search", description="Топ поисковых запросов"),
     BotCommand(command="top_pages", description="Топ-10 посещаемых страниц"),
-    BotCommand(command="new_users", description="Статистика по новым пользователям"),
-    BotCommand(command="active_users", description="Количество активных пользователей"),
-    BotCommand(command="user_stats", description="Статистика по пользователю (ID)"),
+    BotCommand(command="new_users",
+               description="Статистика по новым пользователям"),
+    BotCommand(command="active_users",
+               description="Количество активных пользователей"),
+    BotCommand(command="user_stats",
+               description="Статистика по пользователю (ID)"),
     BotCommand(command="full_report", description="Полный отчет о системе"),
     BotCommand(command="ai_report", description="Аналитический отчет от LLM"),
 ]
+
+
 def _is_admin(message: Message) -> bool:
     username = (message.from_user.username or "").lstrip("@")
     return username in settings.admin_usernames
@@ -236,8 +244,44 @@ async def cmd_full_report(message: Message):
     if not _is_admin(message):
         await message.answer("Недостаточно прав.")
         return
-    data = await _api_get("admin/full_report")
-    await message.answer(f"Полный отчёт:\n{data}")
+
+    # Отправляем сообщение о загрузке
+    loading_msg = await message.answer("⏳ Формирую полный отчёт...")
+
+    try:
+        data = await _api_get("admin/full_report")
+        if "error" in data:
+            await loading_msg.edit_text(f"❌ Ошибка запроса к API: {data['error']}")
+            return
+
+        # Форматируем отчёт
+        formatted_report = parse_full_report(data)
+
+        # Telegram имеет лимит на длину сообщения (4096 символов)
+        # Разбиваем на части, если нужно
+        max_length = 4000
+        if len(formatted_report) > max_length:
+            parts = []
+            current_part = ""
+            for line in formatted_report.split("\n"):
+                if len(current_part) + len(line) + 1 > max_length:
+                    parts.append(current_part)
+                    current_part = line + "\n"
+                else:
+                    current_part += line + "\n"
+            if current_part:
+                parts.append(current_part)
+
+            # Отправляем первую часть
+            await loading_msg.edit_text(parts[0], parse_mode="HTML")
+
+            # Отправляем остальные части
+            for part in parts[1:]:
+                await message.answer(part, parse_mode="HTML")
+        else:
+            await loading_msg.edit_text(formatted_report, parse_mode="HTML")
+    except Exception as e:
+        await loading_msg.edit_text(f"❌ Ошибка при формировании отчёта: {e}")
 
 
 @dp.message(Command("ai_report"))
@@ -245,9 +289,60 @@ async def cmd_ai_report(message: Message):
     if not _is_admin(message):
         await message.answer("Недостаточно прав.")
         return
-    data = await _api_get("admin/ai_report")
-    analysis = data.get("analysis") or "LLM-аналитика недоступна."
-    await message.answer(analysis)
+
+    # Отправляем сообщение о загрузке
+    loading_msg = await message.answer("🤖 Генерирую маркетинговый отчёт с помощью AI...\n⏳ Это может занять некоторое время...")
+
+    try:
+        data = await _api_get("admin/ai_report")
+
+        if "error" in data:
+            await loading_msg.edit_text(
+                f"❌ Ошибка при генерации отчёта:\n{data.get('error', 'Неизвестная ошибка')}\n\n"
+                "Проверьте, что OPENAI_API_KEY настроен в переменных окружения."
+            )
+            return
+
+        analysis = data.get("analysis")
+        if not analysis:
+            await loading_msg.edit_text(
+                "⚠️ LLM-аналитика недоступна.\n"
+                "Возможные причины:\n"
+                "• OPENAI_API_KEY не настроен\n"
+                "• Ошибка при обращении к OpenAI API\n"
+                f"Детали: {data.get('error', 'N/A')}"
+            )
+            return
+
+        # Форматируем отчёт с поддержкой HTML
+        formatted_analysis = f"<b>📊 МАРКЕТИНГОВЫЙ ОТЧЕТ ОТ AI</b>\n\n{analysis}"
+
+        # Telegram имеет лимит на длину сообщения (4096 символов)
+        # Разбиваем на части, если нужно
+        max_length = 4000
+        if len(formatted_analysis) > max_length:
+            parts = []
+            current_part = ""
+            for line in formatted_analysis.split("\n"):
+                if len(current_part) + len(line) + 1 > max_length:
+                    parts.append(current_part)
+                    current_part = line + "\n"
+                else:
+                    current_part += line + "\n"
+            if current_part:
+                parts.append(current_part)
+
+            # Отправляем первую часть
+            await loading_msg.edit_text(parts[0], parse_mode="HTML")
+
+            # Отправляем остальные части
+            for part in parts[1:]:
+                await message.answer(part, parse_mode="HTML")
+        else:
+            await loading_msg.edit_text(formatted_analysis, parse_mode="HTML")
+
+    except Exception as e:
+        await loading_msg.edit_text(f"❌ Ошибка при обработке отчёта: {e}")
 
 
 async def main() -> None:
