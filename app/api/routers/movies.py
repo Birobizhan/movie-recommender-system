@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models.user import User
-from app.schemas.movie import MovieResponse, MovieCreate
+from app.schemas.movie import MovieResponse, MovieCreate, MovieRecommendationRequest
 from app.services import MovieService
 
 router = APIRouter(tags=["Movies"])
@@ -103,3 +103,45 @@ def get_similar_movies(movie_id: int, limit: int = 10, db: Session = Depends(dep
     similar = service.get_similar(movie_id, limit=limit)
     # Возвращаем пустой список, если похожих фильмов нет
     return similar or []
+
+
+@router.post("/recommend", response_model=List[MovieResponse])
+def recommend_movies(
+    request: MovieRecommendationRequest,
+    db: Session = Depends(deps.get_db),
+):
+    """
+    Рекомендует фильмы на основе ответов пользователя из бота вопрос-ответ.
+    """
+    service = MovieService(db)
+    movies = service.recommend_movies(
+        main_genre=request.main_genre,
+        subgenre=request.subgenre,
+        subgenre_detail=request.subgenre_detail,
+        time_period=request.time_period,
+        limit=request.limit,
+    )
+    return movies
+
+
+@router.post("/recommend", response_model=List[MovieResponse])
+def recommend_movies(
+    main_genre: str = Query(..., description="Основной жанр"),
+    subgenre: str = Query(..., description="Поджанр"),
+    subgenre_detail: str = Query(..., description="Детализация поджанра"),
+    time_period: str = Query(..., description="Временной период"),
+    limit: int = Query(20, ge=1, le=50, description="Количество рекомендаций"),
+    db: Session = Depends(deps.get_db),
+):
+    """
+    Рекомендует фильмы на основе ответов пользователя из бота вопрос-ответ.
+    """
+    service = MovieService(db)
+    movies = service.recommend_movies(
+        main_genre=main_genre,
+        subgenre=subgenre,
+        subgenre_detail=subgenre_detail,
+        time_period=time_period,
+        limit=limit,
+    )
+    return movies

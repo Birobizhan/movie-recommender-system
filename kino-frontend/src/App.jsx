@@ -10,6 +10,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import ListsPage from './pages/ListsPage';
 import ListDetailPage from './pages/ListDetailPage';
+import MovieBotPage from './pages/MovieBotPage';
 import './style.css'; // Не забудь положить сюда файл style.css из предыдущего ответа
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="lists" element={<ListsPage />} />
           <Route path="lists/:id" element={<ListDetailPage />} />
+          <Route path="movie-bot" element={<MovieBotPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
