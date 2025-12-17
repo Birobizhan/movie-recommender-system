@@ -101,6 +101,5 @@ def get_movie(
 def get_similar_movies(movie_id: int, limit: int = 10, db: Session = Depends(deps.get_db)):
     service = MovieService(db)
     similar = service.get_similar(movie_id, limit=limit)
-    if similar is None:
-        raise HTTPException(status_code=404, detail="Movie not found")
-    return similar
+    # Возвращаем пустой список, если похожих фильмов нет
+    return similar or []

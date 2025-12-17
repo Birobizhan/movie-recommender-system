@@ -22,4 +22,4 @@ API документация доступна по адресу http://localhost
 ```docker-compose stop```
 
 Чтобы заполнить бд данными выполните команду:
-```cat backup_postgres.sql | docker exec -i db psql -U user -d movie_recommender```
+```cat new_dump.sql | docker exec -i db psql -U user -d movie_recommender```

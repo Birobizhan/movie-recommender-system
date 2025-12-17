@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getMovieById, getMovieReviews, createReview, getCurrentUser, getUserLists, addMoviesToList, removeMoviesFromList, ensureWatchlist, getListById } from '../api';
+import { getMovieById, getMovieReviews, createReview, getCurrentUser, getUserLists, addMoviesToList, removeMoviesFromList, ensureWatchlist, getListById, getSimilarMovies } from '../api';
 
 // --- ФУНКЦИЯ ДЛЯ КОМБИНИРОВАННОГО РЕЙТИНГА ---
 const calculateCombinedRating = (movie) => {
@@ -123,6 +123,7 @@ const MoviePage = () => {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [showListPicker, setShowListPicker] = useState(false);
   const [listMembership, setListMembership] = useState({});
+  const [similarMovies, setSimilarMovies] = useState([]);
 
   useEffect(() => {
     setLoading(true);
@@ -174,6 +175,15 @@ const MoviePage = () => {
         }
       })
       .catch(() => {});
+
+    // Загружаем похожие фильмы
+    getSimilarMovies(id, 10)
+      .then((resp) => {
+        setSimilarMovies(resp.data || []);
+      })
+      .catch(() => {
+        setSimilarMovies([]);
+      });
   }, [id]);
 
   if (loading) return (
@@ -425,6 +435,106 @@ const MoviePage = () => {
                             <h2>Описание</h2>
                             <div className="movie-description">
                                 <p>{movie.description}</p>
+                            </div>
+                        </>
+                    )}
+
+                    {/* === ПОХОЖИЕ ФИЛЬМЫ === */}
+                    {similarMovies.length > 0 && (
+                        <>
+                            <h2 style={{ marginTop: '2rem', color: '#111' }}>Похожие фильмы</h2>
+                            <div 
+                                className="similar-movies-carousel similar-movies-carousel-light"
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 'calc(4 * 130px + 3 * 0.9rem)',
+                                    overflowX: 'auto',
+                                    overflowY: 'hidden',
+                                    marginTop: '1rem',
+                                    paddingBottom: '0.5rem',
+                                    WebkitOverflowScrolling: 'touch',
+                                }}
+                            >
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '0.9rem',
+                                    width: 'max-content',
+                                }}>
+                                    {similarMovies.map((similarMovie) => (
+                                        <Link
+                                            key={similarMovie.id}
+                                            to={`/movie/${similarMovie.id}`}
+                                            style={{
+                                                textDecoration: 'none',
+                                                color: 'inherit',
+                                                flexShrink: 0,
+                                                width: '130px',
+                                            }}
+                                        >
+                                            <div className="similar-movie-card-light" style={{
+                                                backgroundColor: '#ffffff',
+                                                border: '1px solid #e0e0e5',
+                                                borderRadius: '10px',
+                                                overflow: 'hidden',
+                                                transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
+                                                cursor: 'pointer',
+                                                width: '130px',
+                                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(-4px)';
+                                                e.currentTarget.style.borderColor = '#6ab4ff';
+                                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(106, 180, 255, 0.3)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                                e.currentTarget.style.borderColor = '#e0e0e5';
+                                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                                            }}
+                                            >
+                                                {similarMovie.poster_url ? (
+                                                    <img
+                                                        src={similarMovie.poster_url}
+                                                        alt={similarMovie.title}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '180px',
+                                                            objectFit: 'cover',
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div style={{
+                                                        width: '100%',
+                                                        height: '180px',
+                                                        backgroundColor: '#f5f5f7',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: '#999',
+                                                        fontSize: '0.85rem'
+                                                    }}>
+                                                        Нет постера
+                                                    </div>
+                                                )}
+                                                <div style={{ padding: '0.6rem', backgroundColor: '#ffffff' }}>
+                                                    <h3 style={{
+                                                        fontSize: '0.85rem',
+                                                        marginBottom: '0.2rem',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                        color: '#111',
+                                                    }}>
+                                                        {similarMovie.title}
+                                                    </h3>
+                                                    {similarMovie.year_release && (
+                                                        <p style={{ color: '#666', fontSize: '0.75rem' }}>{similarMovie.year_release}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         </>
                     )}

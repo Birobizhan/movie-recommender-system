@@ -19,6 +19,9 @@ export const getMovies = (params = {}) => api.get('/movies', { params });
 // Функция для получения одного фильма по ID
 export const getMovieById = (id) => api.get(`/movies/${id}/`);
 
+// Функция для получения похожих фильмов
+export const getSimilarMovies = (movieId, limit = 10) => api.get(`/movies/${movieId}/similar`, { params: { limit } });
+
 // Аутентификация
 export const login = (credentials) => api.post('/users/login', credentials);
 export const register = (payload) => api.post('/users/register', payload);
