@@ -21,9 +21,15 @@ const LoginPage = () => {
     const success = searchParams.get('success');
     const oauthError = searchParams.get('error');
 
+    console.log('[OAuth] Callback params:', { token: token ? 'present' : 'missing', success, oauthError });
+
     if (token && success === 'true') {
+      console.log('[OAuth] Setting auth token and redirecting');
       setAuthToken(token);
-      navigate(from, { replace: true });
+      // Полная перезагрузка страницы, чтобы Header подхватил токен
+      const redirectUrl = from === '/' ? '/' : from;
+      window.location.href = redirectUrl;
+      return;
     } else if (oauthError) {
       const errorMessages = {
         'oauth_cancelled': 'Авторизация через Yandex была отменена',
@@ -32,6 +38,8 @@ const LoginPage = () => {
         'oauth_error': 'Ошибка при авторизации через Yandex',
       };
       setError(errorMessages[oauthError] || 'Ошибка авторизации');
+      // Очищаем URL параметры
+      window.history.replaceState({}, '', '/login');
     }
   }, [searchParams, navigate, from]);
 
