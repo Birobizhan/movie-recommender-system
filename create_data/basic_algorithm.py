@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import numpy as np
+import re
 
 # Ожидаемое количество колонок в данных
 EXPECTED_COLUMNS = 10
@@ -22,109 +23,99 @@ def calculate_average_rating(row):
         if value is None or pd.isna(value):
             return None
         try:
-            # Если значение уже число
             if isinstance(value, (int, float)):
                 return float(value) if float(value) > 0 else None
-            # Если значение строка
-            if not str(value).strip() or str(value).strip().lower() in ['nan', 'none', '']:
+            
+            str_val = str(value).strip()
+            if not str_val or str_val.lower() in ['nan', 'none', '']:
                 return None
-            num = float(str(value).replace(',', '.'))
-            return num if num > 0 else None
+            
+            str_val = str_val.replace(',', '.')
+            str_val = re.sub(r'[^\d\.]', '', str_val)
+            if not str_val:
+                return None
+            return float(str_val) if float(str_val) > 0 else None
         except (ValueError, TypeError):
             return None
     
-    # Оценка Кинопоиска (колонка 5)
     if len(row) > 5:
         kp_rating = safe_float(row[5])
         if kp_rating is not None:
             ratings.append(kp_rating)
     
-    # Оценка IMDB (колонка 8)
     if len(row) > 8:
         imdb_rating = safe_float(row[8])
         if imdb_rating is not None:
             ratings.append(imdb_rating)
     
-    # Оценка критиков (колонка 9)
     if len(row) > 9:
         critics_rating = safe_float(row[9])
         if critics_rating is not None:
             ratings.append(critics_rating)
     
-    if not ratings:
-        return 0.0
-    
-    return round(sum(ratings) / len(ratings), 1)
+    return round(sum(ratings) / len(ratings), 1) if ratings else 0.0
 
-def safe_str_clean(value):
-    """Безопасно преобразует значение в строку и очищает"""
+def clean_text(value):
+    """Очищает текст от кавычек и лишних символов"""
     if pd.isna(value) or value is None:
         return ""
-    try:
-        return str(value).strip()
-    except:
-        return ""
+    
+    text = str(value).strip()
+    text = text.strip('"')
+    text = re.sub(r'\s+', ' ', text)
+    return text
 
 def load_genre_data(file_path):
-    """Загружает данные жанра, автоматически определяя формат файла"""
+    """Загружает данные жанра с обработкой CSV файлов"""
     if not os.path.exists(file_path):
         print(f"Файл {file_path} не найден")
         return None
     
     try:
         if is_excel_file(file_path):
-            print(f"Обнаружен Excel-файл: {os.path.basename(file_path)}")
-            # Читаем Excel-файл
-            df = pd.read_excel(file_path, header=0)
-            
-            # Если данные в одной колонке, разделяем их
-            if len(df.columns) == 1:
-                print("Данные в одной колонке, разделяем...")
-                # Разделяем первую колонку по запятым
-                expanded = df.iloc[:, 0].astype(str).str.split(',', expand=True, n=EXPECTED_COLUMNS-1)
-                # Заменяем исходный DataFrame
-                df = expanded
-            
-            # Обрезаем или дополняем до нужного количества колонок
-            if len(df.columns) > EXPECTED_COLUMNS:
-                df = df.iloc[:, :EXPECTED_COLUMNS]
-            elif len(df.columns) < EXPECTED_COLUMNS:
-                for i in range(EXPECTED_COLUMNS - len(df.columns)):
-                    df[f'empty_{i}'] = ''
+            df = pd.read_excel(file_path, header=None)
         else:
-            print(f"Читаем как CSV-файл: {os.path.basename(file_path)}")
-            # Пробуем разные кодировки для CSV
-            encodings = ['utf-8', 'cp1251', 'windows-1251', 'iso-8859-1']
-            df = None
+            # Читаем весь файл как текст
+            with open(file_path, 'r', encoding='cp1251') as f:
+                content = f.read()
             
-            for encoding in encodings:
-                try:
-                    df = pd.read_csv(file_path, encoding=encoding, header=0)
-                    print(f"Успешно прочитано с кодировкой: {encoding}")
-                    break
-                except UnicodeDecodeError:
-                    continue
-                except Exception as e:
-                    print(f"Ошибка с кодировкой {encoding}: {e}")
-                    continue
+            # Разбиваем на строки и убираем пустые
+            lines = [line.strip() for line in content.split('\n') if line.strip()]
             
-            if df is None:
-                print("Не удалось прочитать файл ни с одной кодировкой")
+            # Разбиваем каждую строку по точке с запятой
+            data = []
+            for line in lines:
+                parts = line.split(';')
+                
+                # Очищаем каждую часть
+                cleaned_parts = [clean_text(part) for part in parts]
+                
+                # Если частей меньше, чем ожидаемых колонок, дополняем
+                if len(cleaned_parts) < EXPECTED_COLUMNS:
+                    cleaned_parts.extend([''] * (EXPECTED_COLUMNS - len(cleaned_parts)))
+                # Если больше - обрезаем
+                elif len(cleaned_parts) > EXPECTED_COLUMNS:
+                    cleaned_parts = cleaned_parts[:EXPECTED_COLUMNS]
+                
+                data.append(cleaned_parts)
+            
+            if not data:
                 return None
-            
-            # Если в CSV данные в одной колонке, разделяем их
-            if len(df.columns) == 1:
-                print("Данные в одной колонке, разделяем...")
-                expanded = df.iloc[:, 0].astype(str).str.split(',', expand=True, n=EXPECTED_COLUMNS-1)
-                df = expanded
+                
+            df = pd.DataFrame(data)
         
-        # Убеждаемся, что у нас достаточно колонок
-        if len(df.columns) < 6:
-            print(f"Недостаточно колонок: {len(df.columns)}")
-            return None
+        # Обрезаем или дополняем до нужного количества колонок
+        if len(df.columns) > EXPECTED_COLUMNS:
+            df = df.iloc[:, :EXPECTED_COLUMNS]
+        elif len(df.columns) < EXPECTED_COLUMNS:
+            for i in range(EXPECTED_COLUMNS - len(df.columns)):
+                df[f'empty_{i}'] = ''
         
         # Заполняем NaN значения
         df = df.fillna('')
+        
+        # Удаляем полностью пустые строки
+        df = df[df.apply(lambda row: any(cell != '' for cell in row), axis=1)]
         
         # Вычисляем среднюю оценку для каждой строки
         avg_ratings = []
@@ -135,26 +126,24 @@ def load_genre_data(file_path):
         result_df = df.iloc[:, :6].copy()
         result_df['Средняя оценка'] = avg_ratings
         
-        # Безопасно очищаем строковые данные в первых 6 колонках
-        for i in range(6):
-            if i < len(result_df.columns):
-                result_df.iloc[:, i] = result_df.iloc[:, i].apply(safe_str_clean)
-        
-        print(f"Успешно загружено {len(result_df)} фильмов")
         return result_df
         
     except Exception as e:
         print(f"Ошибка при чтении {file_path}: {e}")
-        import traceback
-        traceback.print_exc()
         return None
 
-def recommend_movies(user_input):
-    if not user_input or len(user_input) == 0:
-        return []
+def find_similar_movies_by_movie(genre, movie_title, top_n=20):
+    """
+    Находит похожие фильмы на основе указанного фильма
     
-    # Определяем жанр и путь к файлу
-    genre = user_input[0]
+    Args:
+        genre: Жанр фильма (для выбора CSV файла)
+        movie_title: Название фильма для поиска похожих
+        top_n: Количество возвращаемых рекомендаций (по умолчанию 20)
+    
+    Returns:
+        Список похожих фильмов (топ-20)
+    """
     base_path = r"C:\Users\User\Desktop\genre_with_info"
     file_path = os.path.join(base_path, f"{genre}.csv")
     
@@ -164,79 +153,150 @@ def recommend_movies(user_input):
         print(f"Не удалось загрузить данные из {file_path}")
         return []
     
-    # Проверяем структуру данных
-    if len(df.columns) < 7:
-        print(f"Неверная структура данных. Колонок: {len(df.columns)}, ожидалось: 7")
-        return df.iloc[:, 0].head(5).tolist() if len(df.columns) > 0 else []
+    # Ищем фильм в данных
+    found_movie = None
+    movie_index = -1
     
-    # Веса характеристик
-    priority_weights = [1000, 100, 10, 1]
+    # Нормализуем название для поиска
+    search_title = clean_text(movie_title).lower()
     
-    # Рассчитываем релевантность
-    df['relevance'] = 0
-    df['exact_matches'] = 0
+    for idx, row in df.iterrows():
+        title = clean_text(row.iloc[0]).lower()
+        
+        # Проверяем точное совпадение
+        if title == search_title:
+            found_movie = row
+            movie_index = idx
+            break
     
-    # Для каждой характеристики пользователя
-    for i in range(1, min(len(user_input) + 1, 5)):
-        user_val = user_input[i-1]
-        col_idx = i  # Колонки 1-4 в DataFrame
+    if found_movie is None:
+        print(f"Фильм '{movie_title}' не найден в файле {genre}.csv")
+        return []
+    
+    # Извлекаем характеристики найденного фильма
+    movie_name = clean_text(found_movie.iloc[0])
+    movie_genre = clean_text(found_movie[1]) if len(found_movie) > 1 else ""
+    movie_crit2 = clean_text(found_movie[2]) if len(found_movie) > 2 else ""
+    movie_crit3 = clean_text(found_movie[3]) if len(found_movie) > 3 else ""
+    movie_crit4 = clean_text(found_movie[4]) if len(found_movie) > 4 else ""
+    movie_rating = found_movie['Средняя оценка']
+    
+    print(f"\nНайденный фильм: '{movie_name}'")
+    print(f"Характеристики:")
+    print(f"  1. Жанр: {movie_genre}")
+    print(f"  2. {movie_crit2}")
+    print(f"  3. {movie_crit3}")
+    print(f"  4. {movie_crit4}")
+    print(f"  Средняя оценка: {movie_rating:.1f}\n")
+    
+    # Рассчитываем паттерн совпадений для каждого фильма
+    match_patterns = []
+    exact_matches_counts = []
+    crit2_matches = []
+    crit3_matches = []
+    crit4_matches = []
+    
+    for idx, row in df.iterrows():
+        # Пропускаем исходный фильм
+        if idx == movie_index:
+            match_patterns.append("1111")
+            exact_matches_counts.append(3)  # Все 3 критерия совпадают
+            crit2_matches.append("✓")
+            crit3_matches.append("✓")
+            crit4_matches.append("✓")
+            continue
         
-        # Создаем маску для точных совпадений
-        mask = df.iloc[:, col_idx].apply(safe_str_clean) == user_val
+        pattern = "1"  # Первая цифра всегда 1 (жанр совпадает)
+        exact_matches = 0
         
-        # Обновляем релевантность
-        df.loc[mask, 'relevance'] += priority_weights[i-1]
-        df.loc[mask, 'exact_matches'] += 1
+        # Проверяем критерий 2
+        current_crit2 = clean_text(row[2]) if len(row) > 2 else ""
+        if current_crit2 == movie_crit2:
+            pattern += "1"
+            exact_matches += 1
+            crit2_matches.append("✓")
+        else:
+            pattern += "2"
+            crit2_matches.append("✗")
         
-        # Частичные совпадения с предыдущими характеристиками
-        if i > 1:
-            for prev_i in range(i-1):
-                prev_user_val = user_input[prev_i]
-                prev_col_idx = prev_i + 1
-                
-                prev_mask = df.iloc[:, prev_col_idx].apply(safe_str_clean) == prev_user_val
-                curr_not_mask = df.iloc[:, col_idx].apply(safe_str_clean) != user_val
-                
-                partial_mask = prev_mask & curr_not_mask
-                df.loc[partial_mask, 'relevance'] += priority_weights[prev_i] * 0.1
+        # Проверяем критерий 3
+        current_crit3 = clean_text(row[3]) if len(row) > 3 else ""
+        if current_crit3 == movie_crit3:
+            pattern += "1"
+            exact_matches += 1
+            crit3_matches.append("✓")
+        else:
+            pattern += "2"
+            crit3_matches.append("✗")
+        
+        # Проверяем критерий 4
+        current_crit4 = clean_text(row[4]) if len(row) > 4 else ""
+        if current_crit4 == movie_crit4:
+            pattern += "1"
+            exact_matches += 1
+            crit4_matches.append("✓")
+        else:
+            pattern += "2"
+            crit4_matches.append("✗")
+        
+        match_patterns.append(pattern)
+        exact_matches_counts.append(exact_matches)
+    
+    df['match_pattern'] = match_patterns
+    df['exact_matches'] = exact_matches_counts
+    df['crit2_match'] = crit2_matches
+    df['crit3_match'] = crit3_matches
+    df['crit4_match'] = crit4_matches
+    df['is_original'] = df.index == movie_index
     
     # Сортируем по релевантности
     df_sorted = df.sort_values(
-        by=['exact_matches', 'relevance', 'Средняя оценка'],
-        ascending=[False, False, False]
+        by=['exact_matches', 'match_pattern', 'Средняя оценка'],
+        ascending=[False, True, False]
     )
     
-    # Выводим результаты для отладки
-    print(f"\nТоп-5 фильмов для запроса {user_input}:")
-    print(f"{'Название':<40} | {'Полных совпад.':>12} | {'Релевантность':>12} | {'Средняя оценка':>12}")
-    print("-" * 80)
+    # Исключаем исходный фильм из результатов и берем топ-20
+    result_df = df_sorted[~df_sorted['is_original']].head(top_n)
     
-    for idx, row in df_sorted.head(5).iterrows():
-        title = safe_str_clean(row.iloc[0])
-        if not title:
-            title = "Без названия"
-        if len(title) > 39:
-            title = title[:36] + "..."
-        print(f"{title:<40} | {row['exact_matches']:>12} | {row['relevance']:>12.1f} | {row['Средняя оценка']:>12.1f}")
+    # Выводим таблицу
+    print(f"Топ-{top_n} похожих фильмов на '{movie_name}':")
+    print(f"{'№':<3} {'Название':<30} | {'Совпад.':>7} | {'Паттерн':>7} | {'Оценка':>7} | {'Крит2':>6} | {'Крит3':>6} | {'Крит4':>6}")
+    print("-" * 85)
     
-    # Возвращаем топ-5 названий
     result = []
-    for idx, row in df_sorted.head(5).iterrows():
-        title = safe_str_clean(row.iloc[0])
+    for i, (idx, row) in enumerate(result_df.iterrows(), 1):
+        title = clean_text(row.iloc[0])
         if not title:
             title = "Без названия"
+        
+        # Обрезаем название если слишком длинное
+        display_title = title[:28] + "..." if len(title) > 30 else title
+        
+        print(f"{i:<3} {display_title:<30} | {row['exact_matches']:>7} | {row['match_pattern']:>7} | {row['Средняя оценка']:>7.1f} | {row['crit2_match']:>6} | {row['crit3_match']:>6} | {row['crit4_match']:>6}")
+        
         result.append(title)
     
     return result
 
-# Пример использования
+# Пример использования с заданными параметрами
 if __name__ == "__main__":
-    user_selection = [
-        "Военный",
-        "Драма", 
-        "Личные драмы солдат",
-        "Классика (до 2000 года)"
+    # Словарь с тестовыми примерами
+    test_cases = [
+        {"genre": "Ужасы", "movie_title": "Рассвет мертвецов"},
+        {"genre": "Биографический", "movie_title": "Сильнее"},
+        # Можно добавить больше тестовых случаев
+        # {"genre": "Фэнтези", "movie_title": "Хоббит"},
     ]
-
-    recommended = recommend_movies(user_selection)
-    print("\nРекомендованные фильмы:", recommended)
+    
+    for test_case in test_cases:
+        genre = test_case["genre"]
+        movie_title = test_case["movie_title"]
+        
+        print("=" * 85)
+        print(f"Поиск похожих фильмов для: {movie_title} (жанр: {genre})")
+        print("=" * 85)
+        
+        similar_movies = find_similar_movies_by_movie(genre, movie_title, top_n=20)
+        print(f"\nВсего найдено похожих фильмов: {len(similar_movies)}")
+        print(f"Топ-20 рекомендаций: {similar_movies}")
+        print("\n")
