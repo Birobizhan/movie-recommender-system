@@ -24,6 +24,7 @@ class OAuthService:
                         "code": code,
                         "client_id": YANDEX_CLIENT_ID,
                         "client_secret": YANDEX_CLIENT_SECRET,
+                        "redirect_uri": YANDEX_REDIRECT_URI,  # Важно: должен совпадать с тем, что в authorize
                     },
                 )
                 token_response.raise_for_status()

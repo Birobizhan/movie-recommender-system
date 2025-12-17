@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from urllib.parse import urlencode
 from app.api import deps
 from app.services.oauth import OAuthService
 from app.core.config import YANDEX_CLIENT_ID, YANDEX_REDIRECT_URI, FRONTEND_URL
@@ -17,12 +18,19 @@ async def yandex_login():
             detail="Yandex OAuth не настроен"
         )
     
-    auth_url = (
-        f"https://oauth.yandex.ru/authorize?"
-        f"response_type=code&"
-        f"client_id={YANDEX_CLIENT_ID}&"
-        f"redirect_uri={YANDEX_REDIRECT_URI}"
-    )
+    # Логируем redirect_uri для отладки
+    print(f"[OAuth] Redirect URI: {YANDEX_REDIRECT_URI}")
+    print(f"[OAuth] Client ID: {YANDEX_CLIENT_ID[:10]}...")
+    
+    # Правильно кодируем параметры URL
+    params = {
+        "response_type": "code",
+        "client_id": YANDEX_CLIENT_ID,
+        "redirect_uri": YANDEX_REDIRECT_URI,
+    }
+    
+    auth_url = f"https://oauth.yandex.ru/authorize?{urlencode(params)}"
+    print(f"[OAuth] Auth URL: {auth_url}")
     
     return RedirectResponse(url=auth_url)
 
