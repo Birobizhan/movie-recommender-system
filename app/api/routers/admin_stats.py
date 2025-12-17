@@ -112,16 +112,16 @@ def user_stats(
 
 
 @router.get("/full_report")
-def full_report(service: AdminStatsService = Depends(get_service)):
+async def full_report(service: AdminStatsService = Depends(get_service)):
     """
     /full_report - Комплексный отчёт по основным метрикам.
     """
-    return service.get_full_report()
+    return await service.get_full_report()
 
 
 @router.get("/ai_report")
-def ai_report(service: AdminStatsService = Depends(get_service)):
+async def ai_report(service: AdminStatsService = Depends(get_service)):
     """
     /ai_report - Анализ полного отчёта с помощью LLM.
     """
-    return service.get_ai_report()
+    return await service.get_ai_report()

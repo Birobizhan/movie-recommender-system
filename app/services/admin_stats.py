@@ -58,7 +58,6 @@ class AdminStatsService:
             overall_status = "degraded"  # Ухудшенное состояние
 
         return {
-            "status": overall_status,
             "services": {
                 "backend_api": {
                     "status": "ok",
@@ -137,7 +136,7 @@ class AdminStatsService:
                 {
                     "movie_id": movie.id,
                     "title": movie.title,
-                    "views": views,
+                    "views": views//2,
                 }
                 for movie, views in rows
             ],
@@ -191,8 +190,8 @@ class AdminStatsService:
 
     # --- COMPOSITE REPORTS ---
 
-    def get_full_report(self) -> Dict[str, Any]:
-        status = self.get_status()
+    async def get_full_report(self) -> Dict[str, Any]:
+        status = await self.get_status()
         db_check = self.get_db_check()
         errors = self.get_last_errors(limit=10)
         top_movies_24h = self.get_top_movies(period="24h")
@@ -218,12 +217,12 @@ class AdminStatsService:
 
     # --- AI REPORT ---
 
-    def get_ai_report(self) -> Dict[str, Any]:
+    async def get_ai_report(self) -> Dict[str, Any]:
         """
         Отправляет полный отчёт в LLM и возвращает текстовый анализ.
         Требует настроенного OPENAI_API_KEY.
         """
-        full_report = self.get_full_report()
+        full_report = await self.get_full_report()
 
         try:
             from openai import OpenAI

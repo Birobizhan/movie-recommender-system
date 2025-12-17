@@ -1,8 +1,5 @@
 from typing import Callable
-
-import aiohttp
-from fastapi import FastAPI, Request, Depends
-from sqlalchemy import text
+from fastapi import FastAPI, Request
 from sqlalchemy.orm import Session
 from starlette.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,9 +11,7 @@ from app.api.routers.reviews import router as reviews_router
 from app.api.routers.lists import router as lists_router
 from app.api.routers.admin_stats import router as admin_stats_router
 
-# Импорт вашей функции для получения сессии БД (get_db)
 from app.db.session import get_db
-# Импорт вашей функции логирования
 from app.log_to_db import log_page_view
 
 app = FastAPI(

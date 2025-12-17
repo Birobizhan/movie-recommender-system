@@ -6,7 +6,7 @@ from aiohttp import ClientResponseError, ClientError
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message, BotCommand
-
+from .lexicon import parse_status, parse_db
 from .config import get_settings
 
 
@@ -86,11 +86,12 @@ async def cmd_status(message: Message):
         await message.answer("Недостаточно прав.")
         return
     data = await _api_get("admin/status")
+    answer = parse_status(data)
     if "error" in data:
-        await message.answer(f"Ошибка запроса к API: {data['error']}")
+        await message.answer(f"Ошибка запроса к API: {answer}")
     else:
 
-        await message.answer(f"Status: {data}")
+        await message.answer(f"{answer}")
 
 
 @dp.message(Command("db_check"))
@@ -99,7 +100,8 @@ async def cmd_db_check(message: Message):
         await message.answer("Недостаточно прав.")
         return
     data = await _api_get("admin/db_check")
-    await message.answer(f"DB: {data}")
+    answer = parse_db(data)
+    await message.answer(f"{answer}")
 
 
 @dp.message(Command("logs_errors"))

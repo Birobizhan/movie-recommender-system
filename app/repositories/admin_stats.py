@@ -75,7 +75,6 @@ class AdminStatsRepository:
             )
             return q.all()
         except ProgrammingError:
-            # Таблица movie_view_logs ещё не создана – считаем, что просмотров нет
             self.db.rollback()
             return []
 
