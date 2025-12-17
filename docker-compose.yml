@@ -29,6 +29,13 @@ services:
       - ./alembic:/src/alembic
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET}
+      YANDEX_REDIRECT_URI: ${YANDEX_REDIRECT_URI:-http://46.173.16.158/api/auth/yandex/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://46.173.16.158}
 
   telegram_bot:
     build: .
