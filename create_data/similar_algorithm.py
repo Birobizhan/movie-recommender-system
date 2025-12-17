@@ -282,8 +282,8 @@ def find_similar_movies_by_movie(genre, movie_title, top_n=20):
 if __name__ == "__main__":
     # Словарь с тестовыми примерами
     test_cases = [
-        {"genre": "Ужасы", "movie_title": "Рассвет мертвецов"},
-        {"genre": "Биографический", "movie_title": "Сильнее"},
+        {"genre": "Криминал", "movie_title": "Суши гёл"},
+        {"genre": "Биографический", "movie_title": "Дело Ричарда Джуэлла"},
         # Можно добавить больше тестовых случаев
         # {"genre": "Фэнтези", "movie_title": "Хоббит"},
     ]
