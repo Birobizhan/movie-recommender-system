@@ -98,65 +98,92 @@ const ProfilePage = () => {
     );
   }
 
+  const memberSince = profile.created_at ? new Date(profile.created_at).toLocaleDateString() : null;
+  const watchedCount = profile.recent_watched_movies?.length || 0;
+  const stats = [
+    { label: 'Отзывов', value: profile.reviews_count || 0 },
+    { label: 'Списков', value: profile.lists_count || 0 },
+    { label: 'Средняя оценка', value: profile.average_rating ? profile.average_rating.toFixed(1) : '—' },
+    { label: 'Просмотрено фильмов', value: watchedCount },
+  ];
+
   return (
     <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Профиль</h1>
-        
-        {/* Информация о пользователе */}
+
+        {/* Шапка профиля с метриками */}
         <div style={{
-          backgroundColor: '#1f1f1f',
-          padding: '1.5rem',
-          borderRadius: '8px',
+          backgroundColor: '#15151a',
+          padding: '1.75rem',
+          borderRadius: '14px',
           marginBottom: '2rem',
+          border: '1px solid #26262f',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(220px, 1fr) 2fr',
+          gap: '16px',
+          alignItems: 'center',
+          flexWrap: 'wrap'
         }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{profile.username}</h2>
-            <p style={{ color: '#aaa' }}>{profile.email}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: 50,
+              height: 50,
+              minWidth: 50,
+              minHeight: 50,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #6ab4ff, #5f8bff)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.6rem', fontWeight: 700, color: '#0f0f10'
+            }}>
+              {(profile.username || profile.email || 'U').slice(0, 1).toUpperCase()}
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{profile.username}</h2>
+              <p style={{ color: '#9aa0b5', marginBottom: 4 }}>{profile.email}</p>
+            </div>
           </div>
-          
-          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-            <div>
-              <span style={{ color: '#aaa' }}>Отзывов: </span>
-              <span style={{ fontWeight: 'bold' }}>{profile.reviews_count || 0}</span>
-            </div>
-            <div>
-              <span style={{ color: '#aaa' }}>Списков: </span>
-              <span style={{ fontWeight: 'bold' }}>{profile.lists_count || 0}</span>
-            </div>
-            {profile.average_rating && (
-              <div>
-                <span style={{ color: '#aaa' }}>Средняя оценка: </span>
-                <span style={{ fontWeight: 'bold' }}>{profile.average_rating.toFixed(1)}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+            {stats.map((stat) => (
+              <div key={stat.label} style={{
+                background: '#1d1d24',
+                border: '1px solid #2a2a33',
+                borderRadius: '10px',
+                padding: '12px 14px'
+              }}>
+                <div style={{ color: '#9aa0b5', fontSize: '0.9rem' }}>{stat.label}</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 600, marginTop: 4 }}>{stat.value}</div>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
         {/* Любимые жанры */}
         {profile.favorite_genres && profile.favorite_genres.length > 0 && (
           <div style={{
-            backgroundColor: '#1f1f1f',
+            backgroundColor: '#15151a',
             padding: '1.5rem',
-            borderRadius: '8px',
+            borderRadius: '12px',
             marginBottom: '2rem',
+            border: '1px solid #26262f'
           }}>
-            <h2 style={{ fontSize: '1.3rem', marginBottom: '1rem' }}>Любимые жанры</h2>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Любимые жанры</h2>
+            <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
               {profile.favorite_genres.map((item, index) => (
                 <div
                   key={index}
                   style={{
-                    backgroundColor: '#2b2b2e',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '6px',
+                    background: '#1f1f27',
+                    padding: '0.55rem 0.9rem',
+                    borderRadius: '10px',
                     display: 'flex',
                     gap: '0.5rem',
                     alignItems: 'center',
+                    border: '1px solid #2c2c36'
                   }}
                 >
-                  <span style={{ fontWeight: '500' }}>{item.genre}</span>
-                  <span style={{ color: '#aaa', fontSize: '0.9rem' }}>({item.count})</span>
+                  <span style={{ fontWeight: '600' }}>{item.genre}</span>
+                  <span style={{ color: '#9aa0b5', fontSize: '0.9rem' }}>({item.count})</span>
                 </div>
               ))}
             </div>
@@ -166,15 +193,16 @@ const ProfilePage = () => {
         {/* Последние просмотренные фильмы */}
         {profile.recent_watched_movies && profile.recent_watched_movies.length > 0 && (
           <div style={{
-            backgroundColor: '#1f1f1f',
+            backgroundColor: '#15151a',
             padding: '1.5rem',
-            borderRadius: '8px',
+            borderRadius: '12px',
             marginBottom: '2rem',
+            border: '1px solid #26262f'
           }}>
-            <h2 style={{ fontSize: '1.3rem', marginBottom: '1rem' }}>Последние просмотренные</h2>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Последние просмотренные</h2>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
               gap: '1rem',
             }}>
               {profile.recent_watched_movies.map((movie) => (
@@ -187,14 +215,21 @@ const ProfilePage = () => {
                   }}
                 >
                   <div style={{
-                    backgroundColor: '#2b2b2e',
-                    borderRadius: '8px',
+                    backgroundColor: '#1f1f27',
+                    border: '1px solid #2c2c36',
+                    borderRadius: '10px',
                     overflow: 'hidden',
-                    transition: 'transform 0.2s ease',
+                    transition: 'transform 0.2s ease, border-color 0.2s ease',
                     cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.borderColor = '#6ab4ff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = '#2c2c36';
+                  }}
                   >
                     {movie.poster_url ? (
                       <img
@@ -202,26 +237,27 @@ const ProfilePage = () => {
                         alt={movie.title}
                         style={{
                           width: '100%',
-                          height: '225px',
+                          height: '230px',
                           objectFit: 'cover',
                         }}
                       />
                     ) : (
                       <div style={{
                         width: '100%',
-                        height: '225px',
-                        backgroundColor: '#333',
+                        height: '230px',
+                        backgroundColor: '#2d2d35',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#aaa',
+                        fontSize: '0.9rem'
                       }}>
                         Нет постера
                       </div>
                     )}
-                    <div style={{ padding: '0.75rem' }}>
+                    <div style={{ padding: '0.8rem' }}>
                       <h3 style={{
-                        fontSize: '0.9rem',
+                        fontSize: '0.95rem',
                         marginBottom: '0.25rem',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -230,7 +266,7 @@ const ProfilePage = () => {
                         {movie.title}
                       </h3>
                       {movie.year_release && (
-                        <p style={{ color: '#aaa', fontSize: '0.8rem' }}>{movie.year_release}</p>
+                        <p style={{ color: '#9aa0b5', fontSize: '0.85rem' }}>{movie.year_release}</p>
                       )}
                     </div>
                   </div>
@@ -242,12 +278,13 @@ const ProfilePage = () => {
 
         {/* Форма смены пароля */}
         <div style={{
-          backgroundColor: '#1f1f1f',
+          backgroundColor: '#15151a',
           padding: '1.5rem',
-          borderRadius: '8px',
+          borderRadius: '12px',
+          border: '1px solid #26262f'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.3rem' }}>Смена пароля</h2>
+            <h2 style={{ fontSize: '1.2rem' }}>Смена пароля</h2>
             <button
               onClick={() => {
                 setShowPasswordForm(!showPasswordForm);
@@ -260,12 +297,12 @@ const ProfilePage = () => {
                 });
               }}
               style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: showPasswordForm ? '#444' : '#2b2b2e',
+                padding: '0.55rem 1.1rem',
+                backgroundColor: showPasswordForm ? '#2a2a33' : '#1f1f27',
                 color: '#fff',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 cursor: 'pointer',
-                border: '1px solid #555',
+                border: '1px solid #2f2f3a',
               }}
             >
               {showPasswordForm ? 'Скрыть' : 'Изменить пароль'}
@@ -275,7 +312,7 @@ const ProfilePage = () => {
           {showPasswordForm && (
             <form onSubmit={handlePasswordChange}>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#aaa' }}>
+                <label style={{ display: 'block', marginBottom: '0.4rem', color: '#9aa0b5' }}>
                   Текущий пароль
                 </label>
                 <input
@@ -286,17 +323,17 @@ const ProfilePage = () => {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    backgroundColor: '#2b2b2e',
+                    backgroundColor: '#1f1f27',
                     color: '#fff',
-                    border: '1px solid #444',
-                    borderRadius: '6px',
+                    border: '1px solid #2c2c36',
+                    borderRadius: '8px',
                     fontSize: '1rem',
                   }}
                 />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#aaa' }}>
+                <label style={{ display: 'block', marginBottom: '0.4rem', color: '#9aa0b5' }}>
                   Новый пароль
                 </label>
                 <input
@@ -308,17 +345,17 @@ const ProfilePage = () => {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    backgroundColor: '#2b2b2e',
+                    backgroundColor: '#1f1f27',
                     color: '#fff',
-                    border: '1px solid #444',
-                    borderRadius: '6px',
+                    border: '1px solid #2c2c36',
+                    borderRadius: '8px',
                     fontSize: '1rem',
                   }}
                 />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#aaa' }}>
+                <label style={{ display: 'block', marginBottom: '0.4rem', color: '#9aa0b5' }}>
                   Подтвердите новый пароль
                 </label>
                 <input
@@ -330,10 +367,10 @@ const ProfilePage = () => {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    backgroundColor: '#2b2b2e',
+                    backgroundColor: '#1f1f27',
                     color: '#fff',
-                    border: '1px solid #444',
-                    borderRadius: '6px',
+                    border: '1px solid #2c2c36',
+                    borderRadius: '8px',
                     fontSize: '1rem',
                   }}
                 />
@@ -353,12 +390,13 @@ const ProfilePage = () => {
                 style={{
                   padding: '0.75rem 1.5rem',
                   backgroundColor: '#6ab4ff',
-                  color: '#fff',
-                  borderRadius: '6px',
+                  color: '#0f0f10',
+                  borderRadius: '10px',
                   cursor: passwordLoading ? 'not-allowed' : 'pointer',
-                  opacity: passwordLoading ? 0.6 : 1,
+                  opacity: passwordLoading ? 0.65 : 1,
                   fontSize: '1rem',
-                  fontWeight: '500',
+                  fontWeight: '600',
+                  border: 'none'
                 }}
               >
                 {passwordLoading ? 'Сохранение...' : 'Сохранить'}
@@ -372,4 +410,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-

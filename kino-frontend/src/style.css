@@ -294,9 +294,9 @@ main.login-page-main {
 
 .movie-item {
     display: grid;
-    grid-template-columns: 10px 70px minmax(400px, 1fr) auto;
+    grid-template-columns: 40px 70px minmax(320px, 1fr) 280px;
     align-items: center;
-    gap: 10px;
+    gap: 18px;
     padding: 18px 0;
     border-bottom: 1px solid #24242a;
 }
@@ -308,9 +308,9 @@ main.login-page-main {
     font-size: 1.25rem;
     font-weight: 600;
     color: #777;
-    width: 32px;
-    text-align: left;
-    padding-top: 8px;
+    width: 50px;
+    text-align: center;
+    padding-top: 0;
 }
 
 .movie-item .poster-placeholder {
@@ -356,6 +356,58 @@ main.login-page-main {
     align-items: center;
     gap: 10px;
     flex-wrap: nowrap;
+    justify-content: flex-end;
+    width: 280px;
+}
+.movie-item .actions .icon-eye {
+    padding: 0 6px;
+    font-size: 18px;
+    line-height: 1.2;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+/* --- Стиль отзывов на детальной странице --- */
+.reviews-section {
+    background: #11141d;
+    border: 1px solid #2a2f3f;
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.reviews-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.review-card {
+    padding: 12px;
+    border: 1px solid #2a2f3f;
+    border-radius: 10px;
+    background: #0e1018;
+}
+
+/* Светлая тема для отзывов */
+.reviews-section-light {
+    background: #f7f8fc;
+    border: 1px solid #e1e4ed;
+}
+.reviews-list-light {
+    gap: 10px;
+}
+.review-card-light {
+    background: #ffffff;
+    border: 1px solid #e1e4ed;
+    color: #111;
+}
+.review-card-light p {
+    color: #333;
 }
 
 .movie-item .rating .rating-value {

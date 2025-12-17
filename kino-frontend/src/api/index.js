@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_URL || '/api';
+
 // Создаем базовую настройку
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api', // Адрес твоего FastAPI
+    baseURL,
 });
 
 // Подхватываем токен, если уже лежит в localStorage
@@ -11,14 +13,11 @@ if (storedToken) {
     api.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
 }
 
-// Функция для получения всех фильмов (с фильтрами/поиском/сортировкой)
-export const getMovies = (params = {}) => api.get('/movies/top', { params });
+// Функция для получения фильмов (с фильтрами/поиском/сортировкой, пагинация по skip/limit)
+export const getMovies = (params = {}) => api.get('/movies', { params });
 
 // Функция для получения одного фильма по ID
 export const getMovieById = (id) => api.get(`/movies/${id}/`);
-
-// Поиск
-export const searchMovies = (query) => api.get('/movies', { params: { q: query } });
 
 // Аутентификация
 export const login = (credentials) => api.post('/users/login', credentials);
@@ -34,6 +33,7 @@ export const getMovieReviews = (movieId) => api.get(`/reviews/movie/${movieId}`)
 export const createReview = (payload) => api.post('/reviews/', payload);
 export const deleteReview = (reviewId) => api.delete(`/reviews/${reviewId}`);
 export const updateReview = (reviewId, payload) => api.put(`/reviews/${reviewId}`, payload);
+export const getUserReviews = (userId) => api.get(`/reviews/user/${userId}`);
 
 // Списки
 export const getUserLists = (userId) => api.get(`/lists/user/${userId}`);

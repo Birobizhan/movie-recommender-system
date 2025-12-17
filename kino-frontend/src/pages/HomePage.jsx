@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getMovies, getCurrentUser, ensureWatchlist, addMoviesToList, removeMoviesFromList, createReview, getMovieById, getListById } from '../api';
+import { getMovies, getCurrentUser, ensureWatchlist, addMoviesToList, removeMoviesFromList, createReview, getMovieById, getListById, getUserReviews, getUserLists } from '../api';
 
 const GENRES = [
   'Боевик', 'Драма', 'Комедия', 'Фантастика', 'Фэнтези',
@@ -69,16 +69,20 @@ const HomePage = () => {
   const [year, setYear] = useState('');
   const [minRating, setMinRating] = useState('');
   const [sortBy, setSortBy] = useState('rating'); // rating | votes
-  const [applyTick, setApplyTick] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 250;
   const [activeRatingMovie, setActiveRatingMovie] = useState(null);
   const [userRatings, setUserRatings] = useState({});
   const [watchlistSet, setWatchlistSet] = useState(new Set());
+  const [seenSet, setSeenSet] = useState(new Set());
+  const [seenListId, setSeenListId] = useState(null);
 
   const fetchMovies = () => {
     setIsLoading(true);
     setError(null);
     const params = {
-      limit: 250,
+      limit: pageSize,
+      skip: (page - 1) * pageSize,
       sort_by: sortBy,
     };
     if (search) params.q = search;
@@ -88,7 +92,21 @@ const HomePage = () => {
 
     getMovies(params)
       .then((response) => {
-        setMovies(response.data);
+        const list = response.data || [];
+        setMovies(list);
+        // если у нас уже есть карта оценок пользователя — оставляем, иначе попытка построить из списка (если сервер вернул reviews)
+        if (me && Object.keys(userRatings).length === 0) {
+          const ratingsMap = {};
+          list.forEach((m) => {
+            if (Array.isArray(m.reviews)) {
+              const own = m.reviews.find((r) => r.author_id === me.id || r.author?.id === me.id);
+              if (own) ratingsMap[m.id] = own.rating;
+            }
+          });
+          if (Object.keys(ratingsMap).length) {
+            setUserRatings(ratingsMap);
+          }
+        }
         setIsLoading(false);
       })
       .catch((err) => {
@@ -104,16 +122,11 @@ const HomePage = () => {
     setSearch(qParam);
   }, [searchParams]);
 
-  // Авто-поиск по вводу в хедере: при смене search сразу перезагружаем фильмы
+  // Авто-поиск и пагинация: любые изменения поисковых/фильтров/страницы -> один запрос
   useEffect(() => {
     fetchMovies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
-  useEffect(() => {
-    fetchMovies();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applyTick]);
+  }, [search, genre, year, minRating, sortBy, page]);
 
   useEffect(() => {
     getCurrentUser()
@@ -128,12 +141,40 @@ const HomePage = () => {
         } catch {
           setWatchlistSet(new Set());
         }
+        try {
+          const listsResp = await getUserLists(resp.data.id);
+          const viewed = listsResp.data?.find((l) => l.title?.toLowerCase() === 'просмотренные');
+          if (viewed) {
+            setSeenListId(viewed.id);
+            try {
+              const seenData = await getListById(viewed.id);
+              const seenIds = new Set((seenData.data.movies || []).map((m) => m.id));
+              setSeenSet(seenIds);
+            } catch {
+              setSeenSet(new Set());
+            }
+          }
+        } catch {
+          setSeenSet(new Set());
+        }
+        // Подтянем свои оценки один раз
+        try {
+          const reviewsResp = await getUserReviews(resp.data.id);
+          const ratingsMap = {};
+          (reviewsResp.data || []).forEach((r) => {
+            if (r.movie_id && r.rating) ratingsMap[r.movie_id] = r.rating;
+          });
+          setUserRatings(ratingsMap);
+        } catch {
+          setUserRatings({});
+        }
       })
       .catch(() => setMe(null));
   }, []);
 
   const applyFilters = () => {
-    setApplyTick((v) => v + 1);
+    setPage(1);
+    fetchMovies();
   };
 
   const toggleWatchLater = async (movieId, inWatchlist) => {
@@ -153,6 +194,25 @@ const HomePage = () => {
       }
     } finally {
       setPending(false);
+    }
+  };
+
+  const toggleSeen = async (movieId, isSeen) => {
+    if (!me || !seenListId) return;
+    try {
+      if (isSeen) {
+        await removeMoviesFromList(seenListId, [movieId]);
+        setSeenSet((prev) => {
+          const next = new Set(prev);
+          next.delete(movieId);
+          return next;
+        });
+      } else {
+        await addMoviesToList(seenListId, [movieId]);
+        setSeenSet((prev) => new Set(prev).add(movieId));
+      }
+    } catch (e) {
+      console.error('toggle seen error', e);
     }
   };
 
@@ -195,17 +255,21 @@ const HomePage = () => {
     );
   }
 
+  const canPrev = page > 1;
+  const canNext = movies.length === pageSize;
+  const pageButtons = Array.from({ length: 5 }, (_, i) => page - 2 + i).filter((p) => p > 0);
+
   return (
     <main>
       <div className="page-container">
         {/* === ОСНОВНОЕ СОДЕРЖИМОЕ (ЛЕВАЯ КОЛОНКА) === */}
         <div className="main-content top-movies">
-          <h1>Топ 250 фильмов</h1>
+          <h1>Фильмы</h1>
           <p className="subtitle">
-            По формуле: среднее арифметическое оценок (Кинопоиск, IMDb, Критики).
+            Показано по {pageSize} фильмов на страницу.
           </p>
           <div className="filters">
-            <span style={{color:'#9aa0b5'}}>Показано: {movies.length} из 250</span>
+            <span style={{color:'#9aa0b5'}}>Показано: {movies.length}</span>
             <select value={genre} onChange={(e)=>setGenre(e.target.value)}>
               <option value="">Любой жанр</option>
               {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
@@ -224,7 +288,7 @@ const HomePage = () => {
                 <p style={{ color: "#aaa", padding: "20px 0" }}>Фильмов пока нет. Запустите скрипт импорта данных.</p>
             ) : (
                 movies.map((movie, index) => {
-                    // ИСПОЛЬЗУЕМ УПРОЩЕННУЮ ЛОГИКУ ИЗВЛЕЧЕНИЯ
+                    const displayRank = (page - 1) * pageSize + index + 1;
                     const directorName = getDirectorName(movie.director);
                     const actors = getMainActors(movie.persons);
                     // Безопасная обработка genres
@@ -232,11 +296,12 @@ const HomePage = () => {
                     const combinedRating = calculateCombinedRating(movie);
                     const inWatchlist = watchlistSet.has(movie.id);
                     const reviewsCount = movie.reviews_count ?? (Array.isArray(movie.reviews) ? movie.reviews.length : 0);
+                    const userRating = userRatings[movie.id];
 
                     return (
                     <li className="movie-item" key={movie.id}>
-                        {/* 1. Номер (rank) - используем индекс + 1 */}
-                        <span className="rank">{movie.rank || index + 1}</span>
+                        {/* 1. Номер (rank) с учётом пагинации */}
+                        <span className="rank">{displayRank}</span>
 
                         {/* 2. Постер */}
                         {movie.poster_url ? (
@@ -295,10 +360,22 @@ const HomePage = () => {
                             <Link to="/login" className="btn-watch-later">+ Буду смотреть</Link>
                           )}
                           <div className="stars">
+                            {me && (
+                              <button
+                                className="icon-eye"
+                                title={seenSet.has(movie.id) ? 'Просмотрено' : 'Отметить просмотренным'}
+                                style={{
+                                  color: seenSet.has(movie.id) ? '#6ab4ff' : '#9aa0b5'
+                                }}
+                                onClick={() => toggleSeen(movie.id, seenSet.has(movie.id))}
+                              >
+                                👁
+                              </button>
+                            )}
                             <button
                               className="star-btn"
                               style={{
-                                color: userRatings[movie.id] ? '#f2c94c' : '#9aa0b5'
+                                color: userRating ? '#f2c94c' : '#9aa0b5'
                               }}
                               onClick={() => setActiveRatingMovie(activeRatingMovie === movie.id ? null : movie.id)}
                               title="Поставить оценку"
@@ -309,7 +386,7 @@ const HomePage = () => {
                               <div className="rating-popover">
                                 {[...Array(10)].map((_, i) => {
                                   const starVal = i + 1;
-                                  const rated = userRatings[movie.id] || 0;
+                                  const rated = userRating || 0;
                                   return (
                                     <button
                                       key={starVal}
@@ -333,6 +410,53 @@ const HomePage = () => {
                 })
             )}
           </ul>
+          <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              disabled={!canPrev}
+              onClick={() => canPrev && setPage((p) => Math.max(1, p - 1))}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: canPrev ? '#2f2f37' : '#1c1c22',
+                color: '#f0f0f0',
+                border: '1px solid #3a3a3d',
+                cursor: canPrev ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Назад
+            </button>
+            <span style={{ color: '#9aa0b5' }}>Страница {page}</span>
+            {pageButtons.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: p === page ? '#6ab4ff' : '#2f2f37',
+                  color: p === page ? '#0f0f10' : '#f0f0f0',
+                  border: '1px solid #3a3a3d',
+                  cursor: 'pointer'
+                }}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              disabled={!canNext}
+              onClick={() => canNext && setPage((p) => p + 1)}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: canNext ? '#2f2f37' : '#1c1c22',
+                color: '#f0f0f0',
+                border: '1px solid #3a3a3d',
+                cursor: canNext ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Вперёд
+            </button>
+          </div>
         </div>
 
         {/* Сайдбар убран по запросу пользователя */}

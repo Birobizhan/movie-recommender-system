@@ -73,3 +73,6 @@ class ErrorLog(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
+
+
+

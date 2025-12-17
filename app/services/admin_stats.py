@@ -136,7 +136,7 @@ class AdminStatsService:
                 {
                     "movie_id": movie.id,
                     "title": movie.title,
-                    "views": views//2,
+                    "views": views,
                 }
                 for movie, views in rows
             ],

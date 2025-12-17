@@ -217,8 +217,35 @@ const MoviePage = () => {
 
   const movieYear = movie.year_release;
   const ageRating = movie.age_rating;
+  const formatMoney = (val) => {
+    if (!val) return '';
+    const raw = String(val).trim();
+    // Префикс (валюта слева) и суффикс (валюта справа), если есть
+    const prefixMatch = raw.match(/^[^\d-+]+/);
+    const suffixMatch = raw.match(/[^\d.,\s]+$/);
+    const prefix = prefixMatch ? prefixMatch[0].trim() : '';
+    const suffix = suffixMatch ? suffixMatch[0].trim() : '';
+
+    // Числовая часть
+    const numericPart = raw
+      .replace(prefix, '')
+      .replace(suffix, '')
+      .replace(/[^\d.,-]/g, '')
+      .replace(/\s+/g, '');
+
+    const num = Number(numericPart.replace(',', '.'));
+    if (Number.isNaN(num)) return val;
+    const formatted = new Intl.NumberFormat('ru-RU').format(num);
+
+    const left = prefix ? `${prefix} ` : '';
+    const right = suffix ? ` ${suffix}` : '';
+    return `${left}${formatted}${right}`;
+  };
+
   const budget = movie.budget;
   const feesWorld = movie.fees_world;
+  const budgetFormatted = formatMoney(budget);
+  const feesWorldFormatted = formatMoney(feesWorld);
   const premiere = movie.world_premiere;
 
   const handleReviewSubmit = async (e) => {
@@ -313,8 +340,9 @@ const MoviePage = () => {
                           <div style={{marginTop:'8px'}}>
                             <button
                               type="button"
-                              className="btn-watch-later"
+                              className="btn-watch-later big"
                               onClick={() => setShowListPicker((v) => !v)}
+                              style={{ width: '100%' }}
                             >
                               Добавить в списки
                             </button>
@@ -366,11 +394,11 @@ const MoviePage = () => {
                         )}
                         {/* 5. Бюджет */}
                         {hasValue(budget) && (
-                            <div className="meta-item"><span className="label">Бюджет: </span><span className="value">{budget}</span></div>
+                            <div className="meta-item"><span className="label">Бюджет: </span><span className="value">{budgetFormatted}</span></div>
                         )}
                         {/* 6. Сборы */}
                         {hasValue(feesWorld) && (
-                            <div className="meta-item"><span className="label">Сборы: </span><span className="value">{feesWorld}</span></div>
+                            <div className="meta-item"><span className="label">Сборы: </span><span className="value">{feesWorldFormatted}</span></div>
                         )}
                         {/* 7. Премьера */}
                         {hasValue(premiere) && (
@@ -422,26 +450,26 @@ const MoviePage = () => {
 
             {/* --- Отзывы --- */}
             <div style={{marginTop: '32px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
-              <div>
-                <h2>Отзывы</h2>
-                {reviews.length === 0 && <p style={{color:'#aaa'}}>Отзывов пока нет</p>}
-                <ul style={{listStyle:'none', padding:0, display:'flex', flexDirection:'column', gap:'12px'}}>
+              <div className="reviews-section reviews-section-light">
+                <h2 style={{color:'#111'}}>Отзывы</h2>
+                {reviews.length === 0 && <p style={{color:'#555'}}>Отзывов пока нет</p>}
+                <ul className="reviews-list reviews-list-light">
                   {reviews.map((rev) => (
-                    <li key={rev.id} style={{padding:'12px', border:'1px solid #333', borderRadius:'8px'}}>
-                      <div style={{display:'flex', justifyContent:'space-between'}}>
-                        <strong>Оценка: {rev.rating}</strong>
-                        {rev.created_at && <span style={{color:'#888', fontSize:'0.85rem'}}>{new Date(rev.created_at).toLocaleString()}</span>}
+                    <li key={rev.id} className="review-card review-card-light">
+                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap: '10px'}}>
+                        <strong style={{color:'#111'}}>Оценка: {rev.rating}</strong>
+                        {rev.created_at && <span style={{color:'#777', fontSize:'0.85rem'}}>{new Date(rev.created_at).toLocaleString()}</span>}
                       </div>
-                      {rev.content && <p style={{marginTop:'8px'}}>{rev.content}</p>}
+                      {rev.content && <p style={{marginTop:'8px', color:'#333'}}>{rev.content}</p>}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div>
-                <h2>Оставить отзыв</h2>
+              <div className="reviews-section reviews-section-light">
+                <h2 style={{color:'#111'}}>Оставить отзыв</h2>
                 <form className="review-form" onSubmit={handleReviewSubmit}>
                     <div className="rating-row">
-                        <span style={{color:'#ccc'}}>Ваша оценка:</span>
+                        <span style={{color:'#444'}}>Ваша оценка:</span>
                         <div className="rating-stars-block">
                             {[...Array(10)].map((_, i) => {
                                 const val = i + 1;
@@ -463,10 +491,11 @@ const MoviePage = () => {
                         placeholder="Ваш отзыв..."
                         value={reviewContent}
                         onChange={(e)=>setReviewContent(e.target.value)}
+                        style={{background:'#fafafa', color:'#111', border:'1px solid #d9dbe5', borderRadius:'10px'}}
                     />
-                    {!currentUser && <p style={{color:'#888', fontSize:'0.9rem'}}>Для отправки нужен вход.</p>}
+                    {!currentUser && <p style={{color:'#666', fontSize:'0.9rem'}}>Для отправки нужен вход.</p>}
                     {reviewError && <p style={{color:'red'}}>{reviewError}</p>}
-                    <button type="submit">Отправить</button>
+                    <button type="submit" className="btn-watch-later big">Отправить</button>
                 </form>
               </div>
             </div>

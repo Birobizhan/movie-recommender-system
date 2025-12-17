@@ -19,3 +19,6 @@ def get_settings() -> BotSettings:
     admin_usernames = [u.strip().lstrip("@") for u in admins_raw.split(",") if u.strip()]
     api_base_url = env.str("ADMIN_API_BASE_URL", "http://localhost:8000/api")
     return BotSettings(token=token, admin_usernames=admin_usernames, api_base_url=api_base_url)
+
+
+
