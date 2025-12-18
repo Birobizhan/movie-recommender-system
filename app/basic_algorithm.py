@@ -308,15 +308,10 @@ def recommend_movies(user_input):
     
     return result
 
-#Пример использования
-if __name__ == "__main__":
-    user_selection = [
-        "Фэнтези",
-        "Драма", 
-        "Темное",
-        "Современное кино (2000–2020)"
-    ]
- 
-
-    recommended = recommend_movies(user_selection)
-    print("\nРекомендованные фильмы:", recommended)
+# #Пример использования
+# if __name__ == "__main__":
+#     user_selection = ['Биографический', 'Семейный', 'Спортивные легенды', 'Современное кино (2000–2020)']
+#
+#
+#     recommended = recommend_movies(user_selection)
+#     print("\nРекомендованные фильмы:", recommended)

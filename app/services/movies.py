@@ -152,12 +152,15 @@ class MovieService:
         Returns:
             Список рекомендованных фильмов
         """
-
+        print([main_genre, subgenre, subgenre_detail, time_period])
         movies = recommend_movies([main_genre, subgenre, subgenre_detail, time_period])
         list_movies = self.db.query(Movie).filter(
             Movie.title.in_(movies)
         ).all()
+        order_map = {title: index for index, title in enumerate(movies)}
 
+        # Сортируем список в Python, используя индекс из order_map
+        list_movies.sort(key=lambda movie: order_map.get(movie.title, float('inf')))
         print(movies)
         print(list_movies)
         return list_movies[:limit]
