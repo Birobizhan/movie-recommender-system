@@ -219,8 +219,8 @@ class AdminStatsService:
 
     async def get_ai_report(self) -> Dict[str, Any]:
         """
-        Отправляет полный отчёт в LLM и возвращает подробный маркетинговый анализ.
-        Требует настроенного OPENAI_API_KEY.
+        Отправляет полный отчёт в LLM (Grok через OpenRouter) и возвращает подробный маркетинговый анализ.
+        Требует настроенного API_KEY для OpenRouter.
         """
         full_report = await self.get_full_report()
 
@@ -228,10 +228,21 @@ class AdminStatsService:
             from openai import OpenAI
             import json
 
-            client = OpenAI()
+            api_key = env.str("OPENROUTER_API_KEY", None) or env.str("API_KEY", None)
+            if not api_key:
+                return {
+                    "report": full_report,
+                    "analysis": None,
+                    "error": "API_KEY или OPENROUTER_API_KEY не настроен",
+                }
+
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=api_key
+            )
             
             # Детальный промпт для маркетингового анализа
-            prompt = """Ты профессиональный маркетинговый аналитик и консультант по продуктам для онлайн-кинотеатра и платформы для оценки фильмов (аналог Кинопоиска/Letterboxd).
+            prompt = f"""Ты профессиональный маркетинговый аналитик и консультант по продуктам для онлайн-кинотеатра и платформы для оценки фильмов (аналог Кинопоиска/Letterboxd).
 
 Ниже приведён JSON с полным техническим отчётом о состоянии сервиса MovieHub. Проанализируй данные и создай подробный маркетинговый отчёт, который включает:
 
@@ -264,22 +275,14 @@ class AdminStatsService:
    - Что нужно сделать в первую очередь
    - Краткосрочные и долгосрочные цели
 
-Форматируй отчёт структурированно, используй эмодзи для визуального разделения разделов, будь конкретным и давай измеримые рекомендации.
+Форматируй отчёт структурированно, будь конкретным и давай измеримые рекомендации.
 
 Отчёт в JSON формате:
-""" + json.dumps(full_report, ensure_ascii=False, indent=2)
+{json.dumps(full_report, ensure_ascii=False, indent=2)}"""
 
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "Ты опытный маркетинговый аналитик и консультант по продуктам для онлайн-кинотеатров и платформ для оценки фильмов. Ты специализируешься на анализе пользовательских данных, выявлении трендов и создании практических рекомендаций для роста бизнеса.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.7,  # Немного выше для более креативного анализа
-                max_tokens=2000,  # Увеличиваем лимит для подробного отчёта
+                model="x-ai/grok-4.1-fast",
+                messages=[{"role": "user", "content": prompt}]
             )
 
             analysis_text = response.choices[0].message.content
