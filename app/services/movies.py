@@ -70,7 +70,8 @@ class MovieService:
                 )
                 self.db.add(log)
                 self.db.commit()
-            except Exception:
+            except Exception as e:
+                print(f"SearchLog error: {e}")
                 self.db.rollback()
         return movies
 
