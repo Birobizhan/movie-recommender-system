@@ -58,7 +58,7 @@ services:
 
       - CHOKIDAR_USEPOLLING=true
       - VITE_API_URL=/api
-    command: npm run dev
+    command: npm run dev -- --host
 
   nginx:
     image: nginx:alpine

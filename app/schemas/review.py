@@ -22,14 +22,3 @@ class ReviewResponse(ReviewBase):
     
     class Config:
         from_attributes = True
-
-class ReviewStats(BaseModel):
-
-    average_rating: float
-    review_count: int
-    rating_distribution: dict[int, int]  # {rating: count}
-
-class UserMovieReview(BaseModel):
-    
-    review: Optional[ReviewResponse] = None
-    has_reviewed: bool

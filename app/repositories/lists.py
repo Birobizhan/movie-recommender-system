@@ -1,7 +1,5 @@
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
-
 from app.models.list import MovieList
 from app.models.movie import Movie
 

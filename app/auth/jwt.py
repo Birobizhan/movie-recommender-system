@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
-
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
-
 from app.core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
