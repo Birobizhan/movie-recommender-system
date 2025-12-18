@@ -25,8 +25,9 @@ class MovieService:
         min_rating: Optional[float] = None,
         sort_by: Optional[str] = None,
         q: Optional[str] = None,
+        current_user: User | None = None,
     ) -> List[Movie]:
-        return self.movie_repo.list_movies(
+        movies = self.movie_repo.list_movies(
             skip=skip,
             limit=limit,
             genre=genre,
@@ -35,6 +36,20 @@ class MovieService:
             sort_by=sort_by,
             search_q=q,
         )
+        if q is not None:
+            try:
+                log = SearchLog(
+                    query=q.strip()[:255],
+                    has_results=bool(movies),
+                    results_count=len(movies),
+                    user_id=current_user.id if current_user else None,
+                )
+                self.db.add(log)
+                self.db.commit()
+            except Exception as e:
+                print(f"SearchLog error: {e}")
+                self.db.rollback()
+        return movies
 
     def get_top_movies(
         self,
