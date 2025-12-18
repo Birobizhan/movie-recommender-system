@@ -28,3 +28,4 @@ def test_search_movies_empty(client):
     assert response.status_code == status.HTTP_200_OK
     assert isinstance(response.json(), list)
 
+

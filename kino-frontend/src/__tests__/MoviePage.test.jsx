@@ -13,6 +13,7 @@ const mockedApi = vi.hoisted(() => ({
   removeMoviesFromList: vi.fn(),
   addMoviesToList: vi.fn(),
   createReview: vi.fn(),
+  getSimilarMovies: vi.fn(),
 }));
 
 vi.mock('../api', () => mockedApi);
@@ -44,6 +45,7 @@ describe('MoviePage', () => {
     mockedApi.getUserLists.mockResolvedValue({ data: [] });
     mockedApi.ensureWatchlist.mockResolvedValue({ id: 0 });
     mockedApi.getListById.mockResolvedValue({ data: { movies: [] } });
+    mockedApi.getSimilarMovies.mockResolvedValue({ data: [] });
   });
 
   it('renders movie title and formatted money', async () => {
