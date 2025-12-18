@@ -65,6 +65,12 @@ const HomePage = () => {
 
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
+  // Фильтры для ввода (не применяются сразу)
+  const [genreInput, setGenreInput] = useState('');
+  const [yearInput, setYearInput] = useState('');
+  const [minRatingInput, setMinRatingInput] = useState('');
+  const [sortByInput, setSortByInput] = useState('rating');
+  // Применённые фильтры (используются для запроса)
   const [genre, setGenre] = useState('');
   const [year, setYear] = useState('');
   const [minRating, setMinRating] = useState('');
@@ -122,11 +128,19 @@ const HomePage = () => {
     setSearch(qParam);
   }, [searchParams]);
 
-  // Авто-поиск и пагинация: любые изменения поисковых/фильтров/страницы -> один запрос
+  // Загрузка при изменении применённых фильтров или страницы
   useEffect(() => {
     fetchMovies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, genre, year, minRating, sortBy, page]);
+
+  // Синхронизация инпутов с применёнными фильтрами при первой загрузке
+  useEffect(() => {
+    setGenreInput(genre);
+    setYearInput(year);
+    setMinRatingInput(minRating);
+    setSortByInput(sortBy);
+  }, []);
 
   useEffect(() => {
     getCurrentUser()
@@ -173,8 +187,11 @@ const HomePage = () => {
   }, []);
 
   const applyFilters = () => {
+    setGenre(genreInput);
+    setYear(yearInput);
+    setMinRating(minRatingInput);
+    setSortBy(sortByInput);
     setPage(1);
-    fetchMovies();
   };
 
   const toggleWatchLater = async (movieId, inWatchlist) => {
@@ -270,13 +287,13 @@ const HomePage = () => {
           </p>
           <div className="filters">
             <span style={{color:'#9aa0b5'}}>Показано: {movies.length}</span>
-            <select value={genre} onChange={(e)=>setGenre(e.target.value)}>
+            <select value={genreInput} onChange={(e)=>setGenreInput(e.target.value)}>
               <option value="">Любой жанр</option>
               {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
-            <input placeholder="Год" value={year} onChange={(e)=>setYear(e.target.value)} />
-            <input placeholder="Мин. рейтинг" value={minRating} onChange={(e)=>setMinRating(e.target.value)} />
-            <select value={sortBy} onChange={(e)=>setSortBy(e.target.value)}>
+            <input placeholder="Год" value={yearInput} onChange={(e)=>setYearInput(e.target.value)} />
+            <input placeholder="Мин. рейтинг" value={minRatingInput} onChange={(e)=>setMinRatingInput(e.target.value)} />
+            <select value={sortByInput} onChange={(e)=>setSortByInput(e.target.value)}>
               <option value="rating">Рейтинг</option>
               <option value="votes">Популярность</option>
             </select>

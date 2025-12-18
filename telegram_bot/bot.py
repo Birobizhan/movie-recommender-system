@@ -294,31 +294,44 @@ async def cmd_ai_report(message: Message):
     loading_msg = await message.answer("🤖 Генерирую маркетинговый отчёт с помощью AI...\n⏳ Это может занять некоторое время...")
 
     try:
-        data = await _api_get("admin/ai_report")
+        # AI-отчёт требует больше времени - используем увеличенный таймаут
+        url = settings.api_base_url.rstrip("/") + "/admin/ai_report"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=120) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
 
-        if "error" in data:
-            await loading_msg.edit_text(
-                f"❌ Ошибка при генерации отчёта:\n{data.get('error', 'Неизвестная ошибка')}\n\n"
-                "Проверьте, что OPENAI_API_KEY настроен в переменных окружения."
-            )
-            return
 
-        analysis = data.get("analysis")
-        if not analysis:
-            await loading_msg.edit_text(
-                "⚠️ LLM-аналитика недоступна.\n"
-                "Возможные причины:\n"
-                "• OPENAI_API_KEY не настроен\n"
-                "• Ошибка при обращении к OpenAI API\n"
-                f"Детали: {data.get('error', 'N/A')}"
-            )
-            return
 
-        # Форматируем отчёт с поддержкой HTML
-        formatted_analysis = f"<b>📊 МАРКЕТИНГОВЫЙ ОТЧЕТ ОТ AI</b>\n\n{analysis}"
+        analysis = data.get("analysis") or ""
+        
+        # Конвертируем Markdown в красивый Telegram-формат
+        def format_for_telegram(text: str) -> str:
+            import re
+            # Заголовки ## -> жирный с эмодзи
+            text = re.sub(r'^## \*\*(\d+)\. ([^*]+)\*\*', r'━━━━━━━━━━━━━━━━━━━━\n📌 <b>\1. \2</b>', text, flags=re.MULTILINE)
+            text = re.sub(r'^## \*\*([^*]+)\*\*', r'━━━━━━━━━━━━━━━━━━━━\n📌 <b>\1</b>', text, flags=re.MULTILINE)
+            # Заголовки ### -> подзаголовок
+            text = re.sub(r'^### \*\*([^*]+)\*\*', r'\n▸ <b>\1</b>', text, flags=re.MULTILINE)
+            # Главный заголовок # ->
+            text = re.sub(r'^# \*\*([^*]+)\*\*', r'📊 <b>\1</b>', text, flags=re.MULTILINE)
+            # **жирный** -> <b>жирный</b>
+            text = re.sub(r'\*\*([^*]+)\*\*', r'<b>\1</b>', text)
+            # Убираем --- разделители
+            text = re.sub(r'^---+$', '', text, flags=re.MULTILINE)
+            # Списки с номерами
+            text = re.sub(r'^(\d+)\. ', r'  \1️⃣ ', text, flags=re.MULTILINE)
+            # Списки с дефисами
+            text = re.sub(r'^- ', r'  • ', text, flags=re.MULTILINE)
+            # Убираем лишние пустые строки
+            text = re.sub(r'\n{3,}', '\n\n', text)
+            return text.strip()
+        
+        formatted_analysis = format_for_telegram(analysis)
+        header = "🤖 <b>МАРКЕТИНГОВЫЙ ОТЧЁТ ОТ AI</b>\n\n"
+        formatted_analysis = header + formatted_analysis
 
         # Telegram имеет лимит на длину сообщения (4096 символов)
-        # Разбиваем на части, если нужно
         max_length = 4000
         if len(formatted_analysis) > max_length:
             parts = []
@@ -332,10 +345,7 @@ async def cmd_ai_report(message: Message):
             if current_part:
                 parts.append(current_part)
 
-            # Отправляем первую часть
             await loading_msg.edit_text(parts[0], parse_mode="HTML")
-
-            # Отправляем остальные части
             for part in parts[1:]:
                 await message.answer(part, parse_mode="HTML")
         else:

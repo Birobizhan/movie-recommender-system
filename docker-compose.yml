@@ -36,7 +36,8 @@ services:
       YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET}
       YANDEX_REDIRECT_URI: ${YANDEX_REDIRECT_URI:-http://46.173.16.158/api/auth/yandex/callback}
       FRONTEND_URL: ${FRONTEND_URL:-http://46.173.16.158}
-
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      API_KEY: ${API_KEY}
   telegram_bot:
     build: .
     container_name: moviehub_telegram_bot

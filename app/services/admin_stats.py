@@ -281,7 +281,7 @@ class AdminStatsService:
                     "Content-Type": "application/json",
                 },
                 data=json.dumps({
-                    "model": "x-ai/grok-4.1-fast",
+                    "model": "mistralai/devstral-2512:free",
                     "messages": [
                         {
                             "role": "user",
@@ -292,8 +292,25 @@ class AdminStatsService:
             )
 
             response_data = response.json()
-            analysis_text = response_data['choices'][0]['message']['content']
+            print(response_data)
             
+            # Проверяем наличие ошибки в ответе
+            if "error" in response_data:
+                return {
+                    "report": full_report,
+                    "analysis": None,
+                    "error": f"OpenRouter API error: {response_data['error']}",
+                }
+            
+            if "choices" not in response_data:
+                return {
+                    "report": full_report,
+                    "analysis": None,
+                    "error": f"Unexpected API response (status {response.status_code}): {str(response_data)[:300]}",
+                }
+            
+            analysis_text = response_data['choices'][0]['message']['content']
+            print(analysis_text)
             return {
                 "report": full_report,
                 "analysis": analysis_text,

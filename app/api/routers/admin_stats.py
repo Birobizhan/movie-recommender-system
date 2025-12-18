@@ -124,4 +124,6 @@ async def ai_report(service: AdminStatsService = Depends(get_service)):
     """
     /ai_report - Анализ полного отчёта с помощью LLM.
     """
-    return await service.get_ai_report()
+    answer = await service.get_ai_report()
+    print(answer)
+    return answer
