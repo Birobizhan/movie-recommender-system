@@ -123,25 +123,3 @@ def recommend_movies(
     )
     return movies
 
-
-@router.post("/recommend", response_model=List[MovieResponse])
-def recommend_movies(
-    main_genre: str = Query(..., description="Основной жанр"),
-    subgenre: str = Query(..., description="Поджанр"),
-    subgenre_detail: str = Query(..., description="Детализация поджанра"),
-    time_period: str = Query(..., description="Временной период"),
-    limit: int = Query(20, ge=1, le=50, description="Количество рекомендаций"),
-    db: Session = Depends(deps.get_db),
-):
-    """
-    Рекомендует фильмы на основе ответов пользователя из бота вопрос-ответ.
-    """
-    service = MovieService(db)
-    movies = service.recommend_movies(
-        main_genre=main_genre,
-        subgenre=subgenre,
-        subgenre_detail=subgenre_detail,
-        time_period=time_period,
-        limit=limit,
-    )
-    return movies

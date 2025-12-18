@@ -27,3 +27,4 @@ def test_search_movies_empty(client):
     response = client.get("/api/movies/search?q=несуществующий+фильм")
     assert response.status_code == status.HTTP_200_OK
     assert isinstance(response.json(), list)
+

@@ -25,11 +25,23 @@ def create_list(
 
 
 @router.get("/{list_id}", response_model=MovieListResponse)
-def get_list(list_id: int, db: Session = Depends(deps.get_db)):
+def get_list(
+    list_id: int, 
+    db: Session = Depends(deps.get_db),
+    current_user: User | None = Depends(deps.get_optional_user)
+):
     service = ListService(db)
     db_list = service.get_list(list_id)
     if not db_list:
         raise HTTPException(status_code=404, detail="List not found")
+    
+    # Приватный список могут смотреть только владелец или админ
+    if not db_list.is_public:
+        if not current_user:
+            raise HTTPException(status_code=403, detail="Этот список приватный")
+        if db_list.owner_id != current_user.id and not current_user.is_admin():
+            raise HTTPException(status_code=403, detail="Этот список приватный")
+    
     return db_list
 
 

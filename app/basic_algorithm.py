@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import numpy as np
 
 # Ожидаемое количество колонок в данных
 EXPECTED_COLUMNS = 10
@@ -185,9 +184,9 @@ def recommend_movies(user_input):
     
     # Определяем жанр и путь к файлу
     genre = user_input[0]
-    base_path = r"C:\Users\User\Desktop\genre_with_info"
+    base_path = r"app/genre_with_info/"
     file_path = os.path.join(base_path, f"{genre}.csv")
-    
+    print(file_path)
     # Загружаем данные
     df = load_genre_data(file_path)
     if df is None or df.empty:
@@ -287,7 +286,7 @@ def recommend_movies(user_input):
     print(f"{'Название':<40} | {'Совпадений':>10} | {'Паттерн':>6} | {'Средняя оценка':>12}")
     print("-" * 78)
     
-    for idx, row in df_sorted.head(10).iterrows():  # Покажем 10 для отладки
+    for idx, row in df_sorted.head(5).iterrows():  # Покажем 10 для отладки
         title = ""
         if pd.notna(row.iloc[0]):
             title = str(row.iloc[0]).strip().strip('"')
@@ -299,7 +298,7 @@ def recommend_movies(user_input):
     
     # Возвращаем топ-5 названий
     result = []
-    for idx, row in df_sorted.head(5).iterrows():
+    for idx, row in df_sorted.head(10).iterrows():
         title = ""
         if pd.notna(row.iloc[0]):
             title = str(row.iloc[0]).strip().strip('"')
@@ -314,7 +313,7 @@ if __name__ == "__main__":
     user_selection = [
         "Фэнтези",
         "Драма", 
-        "Криминальный",
+        "Темное",
         "Современное кино (2000–2020)"
     ]
  

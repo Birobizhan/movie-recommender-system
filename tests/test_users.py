@@ -85,3 +85,4 @@ def test_get_current_user_unauthorized(client):
     """Тест получения текущего пользователя без токена."""
     response = client.get("/api/users/me")
     assert response.status_code == status.HTTP_403_FORBIDDEN
+

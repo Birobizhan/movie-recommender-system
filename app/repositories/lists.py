@@ -10,8 +10,8 @@ class ListRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_list(self, *, title: str, description: str | None, owner_id: int) -> MovieList:
-        db_list = MovieList(title=title, description=description, owner_id=owner_id)
+    def create_list(self, *, title: str, description: str | None, owner_id: int, is_public: bool = True) -> MovieList:
+        db_list = MovieList(title=title, description=description, owner_id=owner_id, is_public=is_public)
         self.db.add(db_list)
         self.db.commit()
         self.db.refresh(db_list)
@@ -20,11 +20,13 @@ class ListRepository:
     def get_list(self, list_id: int) -> Optional[MovieList]:
         return self.db.query(MovieList).filter(MovieList.id == list_id).first()
 
-    def update_list(self, movie_list: MovieList, *, title: Optional[str], description: Optional[str]) -> MovieList:
+    def update_list(self, movie_list: MovieList, *, title: Optional[str], description: Optional[str], is_public: Optional[bool] = None) -> MovieList:
         if title is not None:
             movie_list.title = title
         if description is not None:
             movie_list.description = description
+        if is_public is not None:
+            movie_list.is_public = is_public
         self.db.commit()
         self.db.refresh(movie_list)
         return movie_list
@@ -56,16 +58,3 @@ class ListRepository:
         for movie_list in lists:
             movie_list.movie_count = len(movie_list.movies)
         return lists
-
-
-
-
-
-
-
-
-
-
-
-
-

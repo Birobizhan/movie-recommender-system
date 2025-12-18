@@ -17,7 +17,12 @@ class ListService:
         if not isinstance(current_user, User):
             raise ValueError("Invalid user object")
 
-        db_list = self.list_repo.create_list(title=list_in.title, description=list_in.description, owner_id=current_user.id)
+        db_list = self.list_repo.create_list(
+            title=list_in.title, 
+            description=list_in.description, 
+            owner_id=current_user.id,
+            is_public=list_in.is_public
+        )
         if list_in.movie_ids:
             db_list = self.list_repo.add_movies(db_list, list_in.movie_ids)
         db_list.movie_count = len(db_list.movies)
@@ -40,7 +45,12 @@ class ListService:
         # Пользователь может редактировать только свои списки, админ может редактировать любые
         if db_list.owner_id != current_user.id and not current_user.is_admin():
             raise PermissionError("Not enough permissions")
-        db_list = self.list_repo.update_list(db_list, title=list_in.title, description=list_in.description)
+        db_list = self.list_repo.update_list(
+            db_list, 
+            title=list_in.title, 
+            description=list_in.description,
+            is_public=list_in.is_public
+        )
         db_list.movie_count = len(db_list.movies)
         return db_list
 
@@ -89,16 +99,3 @@ class ListService:
 
     def get_user_lists(self, user_id: int):
         return self.list_repo.get_user_lists(user_id)
-
-
-
-
-
-
-
-
-
-
-
-
-

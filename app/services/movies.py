@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, TEXT
-
+from app.basic_algorithm import recommend_movies
 from app.models.movie import Movie
 from app.models.analytics import MovieViewLog, SearchLog
 from app.repositories.movies import MovieRepository
@@ -152,63 +152,12 @@ class MovieService:
         Returns:
             Список рекомендованных фильмов
         """
-        # Определяем год на основе временного периода
-        year_min = None
-        year_max = None
-        
-        if "до 2000" in time_period or "Классика" in time_period:
-            year_max = 1999
-        elif "2000–2020" in time_period or "Современное" in time_period:
-            year_min = 2000
-            year_max = 2020
-        elif "2020–2025" in time_period or "Новинки" in time_period:
-            year_min = 2020
-            year_max = 2025
-        # Если "Неважно" - не фильтруем по году
-        
-        # Ищем фильмы по основному жанру
-        query = self.db.query(Movie)
-        
-        # Фильтр по жанру (используем основной жанр)
-        if hasattr(Movie, "genres"):
-            query = query.filter(
-                func.lower(cast(Movie.genres, TEXT)).like(f"%{main_genre.lower()}%")
-            )
-        
-        # Фильтр по году
-        if year_min is not None:
-            query = query.filter(Movie.year_release >= year_min)
-        if year_max is not None:
-            query = query.filter(Movie.year_release <= year_max)
-        
-        # Минимальный рейтинг и количество голосов
-        query = query.filter(Movie.sum_votes >= 50_000)
-        
-        # Сортируем по рейтингу
-        combined = getattr(Movie, "combined_rating", getattr(Movie, "rating", None))
-        if combined is not None:
-            query = query.order_by(combined.desc(), Movie.sum_votes.desc())
-        
-        movies = query.limit(limit).all()
-        
-        # Если фильмов недостаточно, добавляем без фильтра по году
-        if len(movies) < limit and (year_min is not None or year_max is not None):
-            query_fallback = self.db.query(Movie)
-            if hasattr(Movie, "genres"):
-                query_fallback = query_fallback.filter(
-                    func.lower(cast(Movie.genres, TEXT)).like(f"%{main_genre.lower()}%")
-                )
-            query_fallback = query_fallback.filter(Movie.sum_votes >= 50_000)
-            
-            # Исключаем уже найденные фильмы
-            found_ids = {m.id for m in movies}
-            if found_ids:
-                query_fallback = query_fallback.filter(~Movie.id.in_(found_ids))
-            
-            if combined is not None:
-                query_fallback = query_fallback.order_by(combined.desc(), Movie.sum_votes.desc())
-            
-            additional = query_fallback.limit(limit - len(movies)).all()
-            movies.extend(additional)
-        
-        return movies[:limit]
+
+        movies = recommend_movies([main_genre, subgenre, subgenre_detail, time_period])
+        list_movies = self.db.query(Movie).filter(
+            Movie.title.in_(movies)
+        ).all()
+
+        print(movies)
+        print(list_movies)
+        return list_movies[:limit]

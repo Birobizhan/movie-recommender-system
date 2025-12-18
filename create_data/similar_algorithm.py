@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import numpy as np
 import re
 
 # Ожидаемое количество колонок в данных

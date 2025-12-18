@@ -23,3 +23,4 @@ describe('RegisterPage', () => {
     expect(screen.getByRole('button', { name: /Отправить/i })).toBeInTheDocument();
   });
 });
+
