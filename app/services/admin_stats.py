@@ -219,15 +219,14 @@ class AdminStatsService:
 
     async def get_ai_report(self) -> Dict[str, Any]:
         """
-        Отправляет полный отчёт в LLM (Grok через OpenRouter) и возвращает подробный маркетинговый анализ.
-        Требует настроенного API_KEY для OpenRouter.
+        Отправляет полный отчёт в LLM (через OpenRouter) и возвращает подробный маркетинговый анализ.
+        Требует настроенного OPENROUTER_API_KEY.
         """
+        import json
+        
         full_report = await self.get_full_report()
 
         try:
-            from openai import OpenAI
-            import json
-
             api_key = env.str("OPENROUTER_API_KEY", None) or env.str("API_KEY", None)
             if not api_key:
                 return {
@@ -236,11 +235,6 @@ class AdminStatsService:
                     "error": "API_KEY или OPENROUTER_API_KEY не настроен",
                 }
 
-            client = OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=api_key
-            )
-            
             # Детальный промпт для маркетингового анализа
             prompt = f"""Ты профессиональный маркетинговый аналитик и консультант по продуктам для онлайн-кинотеатра и платформы для оценки фильмов (аналог Кинопоиска/Letterboxd).
 
@@ -280,12 +274,26 @@ class AdminStatsService:
 Отчёт в JSON формате:
 {json.dumps(full_report, ensure_ascii=False, indent=2)}"""
 
-            response = client.chat.completions.create(
-                model="x-ai/grok-4.1-fast",
-                messages=[{"role": "user", "content": prompt}]
+            response = requests.post(
+                url="https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                data=json.dumps({
+                    "model": "x-ai/grok-4.1-fast",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                })
             )
 
-            analysis_text = response.choices[0].message.content
+            response_data = response.json()
+            analysis_text = response_data['choices'][0]['message']['content']
+            
             return {
                 "report": full_report,
                 "analysis": analysis_text,
