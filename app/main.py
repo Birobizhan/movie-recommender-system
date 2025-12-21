@@ -1,9 +1,11 @@
 from typing import Callable
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import traceback
 
 from app.api.routers.users import router as users_router
 from app.api.routers.movies import router as movies_router
@@ -13,7 +15,7 @@ from app.api.routers.admin_stats import router as admin_stats_router
 from app.api.routers.oauth import router as oauth_router
 
 from app.db.session import get_db
-from app.log_to_db import log_page_view
+from app.log_to_db import log_page_view, log_error
 
 app = FastAPI(
     title="MovieHub API",
@@ -51,9 +53,26 @@ app.include_router(oauth_router, prefix="/api", tags=["OAuth"])
 async def log_page_view_middleware(request: Request, call_next: Callable) -> Response:
     """
     Перехватывает все HTTP-запросы и записывает их в лог.
+    Также логирует ошибки в ErrorLog.
     """
     # 1. Выполняем запрос (call_next всегда асинхронный)
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        # Логируем исключение в БД
+        try:
+            db_generator = get_db()
+            db: Session = next(db_generator)
+            log_error(db, exc, level="ERROR")
+            try:
+                next(db_generator)
+            except StopIteration:
+                pass
+        except Exception as db_exc:
+            print(f"Ошибка при записи ошибки в БД: {db_exc}")
+        
+        # Пробрасываем исключение дальше для обработки exception handler
+        raise
 
     path = request.url.path
 
@@ -85,6 +104,46 @@ async def log_page_view_middleware(request: Request, call_next: Callable) -> Res
 
     # 4. Возвращаем ответ
     return response
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Глобальный обработчик исключений, который логирует все ошибки в БД.
+    """
+    # Логируем ошибку в БД
+    try:
+        db_generator = get_db()
+        db: Session = next(db_generator)
+        
+        # Определяем уровень ошибки
+        level = "ERROR"
+        if isinstance(exc, HTTPException):
+            if exc.status_code >= 500:
+                level = "ERROR"
+            elif exc.status_code >= 400:
+                level = "WARNING"
+        
+        log_error(db, exc, level=level)
+        try:
+            next(db_generator)
+        except StopIteration:
+            pass
+    except Exception as db_exc:
+        print(f"Ошибка при записи ошибки в БД: {db_exc}")
+    
+    # Если это HTTPException, возвращаем стандартный ответ FastAPI
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+    
+    # Для остальных исключений возвращаем 500
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
 
 
 @app.get("/")

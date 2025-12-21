@@ -70,12 +70,50 @@ const ListsPage = () => {
     }
   };
 
-  const handleShare = (listId) => {
+  const handleShare = async (listId) => {
     const url = `${window.location.origin}/lists/${listId}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiedId(listId);
-      setTimeout(() => setCopiedId(null), 2000);
-    });
+    
+    // Проверяем доступность Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopiedId(listId);
+        setTimeout(() => setCopiedId(null), 2000);
+      } catch (err) {
+        // Fallback на старый метод
+        fallbackCopyTextToClipboard(url, listId);
+      }
+    } else {
+      // Fallback на старый метод
+      fallbackCopyTextToClipboard(url, listId);
+    }
+  };
+
+  const fallbackCopyTextToClipboard = (text, listId) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setCopiedId(listId);
+        setTimeout(() => setCopiedId(null), 2000);
+      } else {
+        // Если и это не сработало, показываем URL в alert
+        alert(`Ссылка на список:\n${text}`);
+      }
+    } catch (err) {
+      // Если и это не сработало, показываем URL в alert
+      alert(`Ссылка на список:\n${text}`);
+    } finally {
+      document.body.removeChild(textArea);
+    }
   };
 
   const togglePublic = async (lst) => {

@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from starlette.requests import Request
+import traceback
 
-from app.models import PageViewLog
+from app.models.analytics import PageViewLog, ErrorLog
 
 
 def log_page_view(db: Session, request: Request, path: str):
@@ -20,3 +21,24 @@ def log_page_view(db: Session, request: Request, path: str):
     print(f'add {log_entry}')
     db.add(log_entry)
     db.commit()
+
+
+def log_error(db: Session, exception: Exception, level: str = "ERROR", details: str = None):
+    """
+    Создает и сохраняет запись об ошибке в БД.
+    """
+    try:
+        error_message = str(exception)[:500]  # Ограничиваем длину сообщения
+        error_details = details or traceback.format_exc()[:2000]  # Ограничиваем длину деталей
+        
+        log_entry = ErrorLog(
+            level=level,
+            message=error_message,
+            details=error_details
+        )
+        db.add(log_entry)
+        db.commit()
+    except Exception as e:
+        # Если не удалось записать ошибку в БД, просто выводим в консоль
+        print(f"Не удалось записать ошибку в БД: {e}")
+        db.rollback()

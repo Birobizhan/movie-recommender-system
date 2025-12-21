@@ -29,3 +29,4 @@ def test_search_movies_empty(client):
     assert isinstance(response.json(), list)
 
 
+
