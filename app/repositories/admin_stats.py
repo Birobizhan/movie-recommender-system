@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta, date
 from typing import Any, Dict, List, Tuple
-
 from sqlalchemy import func, desc
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
-
 from app.models.movie import Movie
 from app.models.review import Review
 from app.models.list import MovieList
@@ -20,8 +18,6 @@ from app.models.analytics import (
 class AdminStatsRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
-
-    # --- DB / SERVICE STATUS ---
 
     def db_health(self) -> bool:
         try:
@@ -44,8 +40,6 @@ class AdminStatsRepository:
             "users_created_list": users_created_list
         }
 
-    # --- ERROR LOGS ---
-
     def get_last_errors(self, limit: int = 10) -> List[ErrorLog]:
         try:
             return (
@@ -55,11 +49,8 @@ class AdminStatsRepository:
                 .all()
             )
         except ProgrammingError:
-            # Таблица error_logs ещё не создана (нет миграции) – считаем, что ошибок нет
             self.db.rollback()
             return []
-
-    # --- MOVIES / REVIEWS / USERS ---
 
     def top_movies_by_views(
         self, since: datetime, limit: int = 10
@@ -116,7 +107,6 @@ class AdminStatsRepository:
             .distinct()
         )
 
-        # Можно добавить доп. активности позже (лайки, избранное и т.д.)
         user_ids = {uid for (uid,) in review_users}
 
         return len(user_ids)
@@ -150,8 +140,6 @@ class AdminStatsRepository:
             "reviews_count": reviews_count,
             "lists_count": lists_count,
         }
-
-    # --- SEARCH / PAGES ---
 
     def top_search_queries(
         self, limit: int = 5, only_without_results: bool = False

@@ -7,11 +7,8 @@ from app.models.analytics import PageViewLog, ErrorLog
 
 def log_page_view(db: Session, request: Request, path: str):
     """
-    Создает и сохраняет запись лога в БД.
+    Создает и сохраняет запись лога в БД
     """
-    # В реальном приложении user_id должен извлекаться из состояния запроса,
-    # которое устанавливается после успешной аутентификации (например, в зависимости).
-    # Мы используем getattr для безопасного извлечения.
     user_id = getattr(request.state, "user_id", None)
 
     log_entry = PageViewLog(
@@ -25,7 +22,7 @@ def log_page_view(db: Session, request: Request, path: str):
 
 def log_error(db: Session, exception: Exception, level: str = "ERROR", details: str = None):
     """
-    Создает и сохраняет запись об ошибке в БД.
+    Создает и сохраняет запись об ошибке в БД
     """
     try:
         error_message = str(exception)[:500]  # Ограничиваем длину сообщения

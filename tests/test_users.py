@@ -3,18 +3,18 @@ from fastapi import status
 
 
 def test_register_user(client, test_user_data):
-    """Тест регистрации нового пользователя."""
+    """Тест регистрации нового пользователя"""
     response = client.post("/api/users/register", json=test_user_data)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["email"] == test_user_data["email"]
     assert data["username"] == test_user_data["username"]
     assert "id" in data
-    assert "password" not in data  # Пароль не должен возвращаться
+    assert "password" not in data
 
 
 def test_register_duplicate_email(client, test_user_data):
-    """Тест регистрации с дублирующимся email."""
+    """Тест регистрации с дублирующимся email"""
     # Создаем первого пользователя
     client.post("/api/users/register", json=test_user_data)
     
@@ -24,7 +24,7 @@ def test_register_duplicate_email(client, test_user_data):
 
 
 def test_login_user(client, test_user_data):
-    """Тест входа пользователя."""
+    """Тест входа пользователя"""
     # Сначала регистрируем
     client.post("/api/users/register", json=test_user_data)
     
@@ -44,7 +44,7 @@ def test_login_user(client, test_user_data):
 
 
 def test_login_wrong_password(client, test_user_data):
-    """Тест входа с неверным паролем."""
+    """Тест входа с неверным паролем"""
     client.post("/api/users/register", json=test_user_data)
     
     response = client.post(
@@ -58,7 +58,7 @@ def test_login_wrong_password(client, test_user_data):
 
 
 def test_get_current_user(client, test_user_data):
-    """Тест получения текущего пользователя."""
+    """Тест получения текущего пользователя"""
     # Регистрируем и логинимся
     client.post("/api/users/register", json=test_user_data)
     login_response = client.post(
@@ -82,9 +82,6 @@ def test_get_current_user(client, test_user_data):
 
 
 def test_get_current_user_unauthorized(client):
-    """Тест получения текущего пользователя без токена."""
+    """Тест получения текущего пользователя без токена"""
     response = client.get("/api/users/me")
     assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-

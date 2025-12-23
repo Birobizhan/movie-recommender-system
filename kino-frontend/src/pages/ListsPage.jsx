@@ -105,11 +105,9 @@ const ListsPage = () => {
         setCopiedId(listId);
         setTimeout(() => setCopiedId(null), 2000);
       } else {
-        // Если и это не сработало, показываем URL в alert
         alert(`Ссылка на список:\n${text}`);
       }
     } catch (err) {
-      // Если и это не сработало, показываем URL в alert
       alert(`Ссылка на список:\n${text}`);
     } finally {
       document.body.removeChild(textArea);

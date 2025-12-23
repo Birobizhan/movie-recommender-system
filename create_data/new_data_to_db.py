@@ -8,7 +8,6 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from urllib.parse import quote_plus
 
-# === Настройка ===
 env = Env()
 env.read_env()
 
@@ -24,7 +23,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 HEADERS_KP_BASE = {'accept': 'application/json'}
 HEADERS_DB = {'Content-Type': 'application/json'}
 
-# === Вспомогательные функции ===
+
 def safe_float(s):
     try:
         if s is None or (isinstance(s, str) and s.strip() == ''):
@@ -33,13 +32,14 @@ def safe_float(s):
     except (ValueError, TypeError):
         return 0.0
 
+
 def safe_int(s):
     try:
         return int(s) if s is not None else 0
     except (ValueError, TypeError):
         return 0
 
-# === Основная логика ===
+
 def extract_film_data_from_line(line: str, current_line_num: int):
     """Разбирает строку CSV и возвращает film_id и рейтинговые данные."""
     line = line.strip()
@@ -75,6 +75,7 @@ def extract_film_data_from_line(line: str, current_line_num: int):
         print(f"  Ошибка парсинга строки {current_line_num}: {e}")
         return None
 
+
 def fetch_movie_from_kinopoisk(film_id: int, token_index: int):
     """Запрашивает фильм у Кинопоиска, возвращает (data, новый_token_index, success)."""
     token = KINOPOISK_TOKENS[token_index]
@@ -104,6 +105,7 @@ def fetch_movie_from_kinopoisk(film_id: int, token_index: int):
     else:
         print(f"  Ошибка API Кинопоиска для ID {film_id}: {resp.status_code} – {resp.text}")
         return None, token_index, False
+
 
 def prepare_movie_record(raw_data, ratings_info):
     """Формирует запись фильма для вставки в БД."""
@@ -184,9 +186,9 @@ def prepare_movie_record(raw_data, ratings_info):
         "combined_rating": combined_rating
     }
 
+
 def insert_movie_to_db(movie_record, session):
     try:
-        # НЕ сериализуем в JSON! Передаём списки как есть.
         insert_query = text("""
             INSERT INTO movies (
                 kp_id, title, english_title, kp_rating, imdb_rating, critics_rating,
@@ -231,6 +233,7 @@ def insert_movie_to_db(movie_record, session):
         print(f"  Ошибка вставки в БД: {e}")
         return False
 
+
 def process_file(filepath: Path, start_line: int = 1):
     """Обрабатывает один CSV-файл."""
     print(f"\n📁 Обработка файла: {filepath.name}")
@@ -241,7 +244,6 @@ def process_file(filepath: Path, start_line: int = 1):
         print(f"  ❌ Не удалось прочитать файл: {e}")
         return
 
-    # Начинаем с указанной строки (1-индексировано)
     lines_to_process = lines[start_line - 1:]
     current_token_index = 0
 
@@ -250,7 +252,6 @@ def process_file(filepath: Path, start_line: int = 1):
         for i, line in enumerate(lines_to_process):
             current_line_num = i + start_line
 
-            # Парсим строку
             rating_info = extract_film_data_from_line(line, current_line_num)
             if not rating_info:
                 continue
@@ -293,6 +294,7 @@ def process_file(filepath: Path, start_line: int = 1):
 
     finally:
         session.close()
+
 
 def main():
     folder = Path("genre_for_db")

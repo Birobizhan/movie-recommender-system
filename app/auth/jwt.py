@@ -53,7 +53,7 @@ def verify_refresh_token(token: str) -> Dict[str, Any]:
 
 
 def create_password_reset_token(email: str) -> str:
-    """Создает JWT токен для сброса пароля. Время жизни: 1 час."""
+    """Создает JWT токен для сброса пароля. Время жизни: 1 час"""
     to_encode = {"email": email, "type": "password_reset"}
     expire = datetime.utcnow() + timedelta(hours=1)
     to_encode.update({"exp": expire})

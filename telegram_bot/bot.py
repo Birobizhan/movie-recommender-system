@@ -305,7 +305,6 @@ async def cmd_ai_report(message: Message):
 
         analysis = data.get("analysis") or ""
         
-        # Конвертируем Markdown в красивый Telegram-формат
         def format_for_telegram(text: str) -> str:
             import re
             # Заголовки ## -> жирный с эмодзи

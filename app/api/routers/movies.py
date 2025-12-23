@@ -1,8 +1,6 @@
 from typing import List, Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-
 from app.api import deps
 from app.models.user import User
 from app.schemas.movie import MovieResponse, MovieCreate, MovieRecommendationRequest
@@ -22,6 +20,7 @@ def get_movies(
     q: Optional[str] = Query(None, description="поиск по названию"),
     db: Session = Depends(deps.get_db),
 ):
+    """Получение списка фильмов для главной страницы и поиска"""
     service = MovieService(db)
     return service.get_movies(
         skip=skip,
@@ -46,6 +45,7 @@ def get_top_250_movies(
     db: Session = Depends(deps.get_db),
     current_user: User | None = Depends(deps.get_optional_user)
 ):
+    """Эндпоинт для получения лучших 250 фильмов"""
     service = MovieService(db)
     return service.get_top_movies(
         skip=skip,
@@ -65,6 +65,7 @@ def create_movie(
     current_user: User = Depends(deps.get_current_admin),  # Только админ может создавать фильмы
     db: Session = Depends(deps.get_db),
 ):
+    """Эндпоинт для создания списка, доступно только админу"""
     try:
         service = MovieService(db)
         return service.create_movie(movie)
@@ -80,6 +81,8 @@ def search_movies(
     db: Session = Depends(deps.get_db),
     current_user: User | None = Depends(deps.get_optional_user),
 ):
+    """Эндпоинт для поиска фильма"""
+
     service = MovieService(db)
     return service.search(q=q, skip=skip, limit=limit, current_user=current_user)
 
@@ -90,6 +93,8 @@ def get_movie(
     db: Session = Depends(deps.get_db),
     current_user: User | None = Depends(deps.get_optional_user),
 ):
+    """Эндпоинт для получения информации о конкретном фильме по Id"""
+
     service = MovieService(db)
     movie = service.get_movie(movie_id, current_user=current_user)
     if not movie:
@@ -99,6 +104,7 @@ def get_movie(
 
 @router.get("/{movie_id}/similar", response_model=List[MovieResponse])
 def get_similar_movies(movie_id: int, limit: int = 10, db: Session = Depends(deps.get_db)):
+    """Эндпоинт для получения похожик фильмов по id"""
     service = MovieService(db)
     similar = service.get_similar(movie_id, limit=limit)
     # Возвращаем пустой список, если похожих фильмов нет
@@ -122,4 +128,3 @@ def recommend_movies(
         limit=request.limit,
     )
     return movies
-

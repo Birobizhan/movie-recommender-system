@@ -11,7 +11,7 @@ from app.db.base import Base
 class SearchLog(Base):
     """
     Логи поисковых запросов фильмов.
-    Используются для /search_stats_none и /top_search.
+    Используются для /search_stats_none и /top_search
     """
 
     __tablename__ = "search_logs"
@@ -29,7 +29,7 @@ class SearchLog(Base):
 class PageViewLog(Base):
     """
     Логи посещений страниц.
-    Используются для /top_pages.
+    Используются для /top_pages
     """
 
     __tablename__ = "page_view_logs"
@@ -44,8 +44,8 @@ class PageViewLog(Base):
 
 class MovieViewLog(Base):
     """
-    Логи просмотров карточек фильмов.
-    Используются для /top_movies.
+    Логи просмотров карточек фильмов
+    Используются для /top_movies
     """
 
     __tablename__ = "movie_view_logs"
@@ -60,8 +60,8 @@ class MovieViewLog(Base):
 
 class ErrorLog(Base):
     """
-    Упрощённый лог критических ошибок бэкенда.
-    Используется для /logs_errors.
+    Упрощённый лог критических ошибок бэкенда
+    Используется для /logs_errors
     """
 
     __tablename__ = "error_logs"
@@ -73,9 +73,3 @@ class ErrorLog(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
-
-
-
-
-
-

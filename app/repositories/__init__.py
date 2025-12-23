@@ -4,19 +4,3 @@ from app.repositories.users import UserRepository
 from app.repositories.lists import ListRepository
 
 __all__ = ["MovieRepository", "ReviewRepository", "UserRepository", "ListRepository"]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

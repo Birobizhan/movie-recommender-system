@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 
-# Ожидаемое количество колонок в данных
 EXPECTED_COLUMNS = 10
 
 def is_excel_file(file_path):

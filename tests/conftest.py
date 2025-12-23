@@ -10,9 +10,7 @@ import json
 from app.db.base import Base
 from app.main import app
 from app.db.session import get_db
-
-# Импортируем все модели для создания схемы БД
-from app.models import movie, review, user, list, analytics  # noqa: F401
+from app.models import movie, review, user, list, analytics
 
 
 # TypeDecorator для преобразования ARRAY в JSON для SQLite
@@ -77,8 +75,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 @pytest.fixture(scope="function")
 def db():
-    """Создает тестовую БД для каждого теста."""
-    # Применяем патч для SQLite перед созданием схемы
+    """Создает тестовую БД для каждого теста"""
     patch_metadata_for_sqlite()
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
@@ -106,7 +103,7 @@ def client(db):
 
 @pytest.fixture
 def test_user_data():
-    """Тестовые данные пользователя."""
+    """Тестовые данные пользователя"""
     return {
         "email": "test@example.com",
         "username": "testuser",
@@ -116,7 +113,7 @@ def test_user_data():
 
 @pytest.fixture
 def test_movie_data():
-    """Тестовые данные фильма."""
+    """Тестовые данные фильма"""
     return {
         "kp_id": 12345,
         "title": "Тестовый фильм",

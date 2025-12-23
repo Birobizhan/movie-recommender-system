@@ -13,7 +13,6 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Обработка OAuth callback
   useEffect(() => {
     const token = searchParams.get('token');
     const success = searchParams.get('success');

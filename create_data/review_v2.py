@@ -69,7 +69,7 @@ class prompter:
 def add_to_csv_file_safe(result_data: List[str], part_title: str, information_ans: str) -> bool:
     """
     Проверяет совпадение заголовков и записывает данные в CSV файл,
-    используя модуль csv, с использованием потокобезопасной блокировки.
+    используя модуль csv, с использованием потокобезопасной блокировки
     """
     title_from_response = result_data[0].strip()
     title_from_request = part_title.strip()
@@ -106,8 +106,8 @@ def add_to_csv_file_safe(result_data: List[str], part_title: str, information_an
 @Retry(max_retries=2)
 def process(film: str, prompt_template: str) -> List[str]:
     """
-    Обрабатывает один фильм: форматирует промпт, вызывает API, парсит ответ и сохраняет.
-    Возвращает результат, или вызывает исключение при ошибке.
+    Обрабатывает один фильм: форматирует промпт, вызывает API, парсит ответ и сохраняет
+    Возвращает результат, или вызывает исключение при ошибке
     """
     film_title = film.strip()
     request_prompt = prompt_template.format(title=film_title)

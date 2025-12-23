@@ -1,8 +1,6 @@
 from typing import Optional
-
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
 from app.models.user import User
 
 

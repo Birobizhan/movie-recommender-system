@@ -1,7 +1,0 @@
-# Telegram bot package init
-
-
-
-
-
-

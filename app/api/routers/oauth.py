@@ -11,18 +11,16 @@ router = APIRouter(tags=["OAuth"])
 
 @router.get("/auth/yandex")
 async def yandex_login():
-    """Перенаправляет пользователя на страницу авторизации Yandex."""
+    """Перенаправляет пользователя на страницу авторизации Yandex"""
     if not YANDEX_CLIENT_ID:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Yandex OAuth не настроен"
         )
     
-    # Логируем redirect_uri для отладки
     print(f"[OAuth] Redirect URI: {YANDEX_REDIRECT_URI}")
     print(f"[OAuth] Client ID: {YANDEX_CLIENT_ID[:10]}...")
     
-    # Правильно кодируем параметры URL
     params = {
         "response_type": "code",
         "client_id": YANDEX_CLIENT_ID,
@@ -41,7 +39,7 @@ async def yandex_callback(
     error: str = None,
     db: Session = Depends(deps.get_db),
 ):
-    """Обрабатывает callback от Yandex OAuth."""
+    """Обрабатывает callback от Yandex OAuth"""
     if error:
         return RedirectResponse(
             url=f"{FRONTEND_URL}/login?error=oauth_cancelled"
@@ -68,11 +66,8 @@ async def yandex_callback(
         print(f"[OAuth] User processed: id={user.id}, username={user.username}, email={user.email}")
         token_data = oauth_service.create_oauth_token(user)
         
-        # Правильно кодируем токен для URL
         encoded_token = quote(token_data['access_token'], safe='')
-        
-        # Перенаправляем на фронтенд с токеном в URL параметре
-        # Фронтенд должен будет сохранить токен и перенаправить пользователя
+
         redirect_url = f"{FRONTEND_URL}/login?token={encoded_token}&success=true"
         print(f"[OAuth] Redirecting to: {redirect_url[:100]}...")
         return RedirectResponse(url=redirect_url)

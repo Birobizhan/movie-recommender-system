@@ -18,7 +18,7 @@ def auth_token(client, test_user_data):
 
 @pytest.fixture
 def test_movie(client, db, test_movie_data):
-    """Создает тестовый фильм в БД напрямую."""
+    """Создает тестовый фильм в БД напрямую"""
     from app.models.movie import Movie
     
     # Убираем genres из данных, так как SQLite не поддерживает ARRAY
@@ -31,7 +31,7 @@ def test_movie(client, db, test_movie_data):
 
 
 def test_create_list(client, auth_token):
-    """Тест создания списка фильмов."""
+    """Тест создания списка фильмов"""
     response = client.post(
         "/api/lists/",
         json={
@@ -49,7 +49,7 @@ def test_create_list(client, auth_token):
 
 
 def test_create_list_unauthorized(client):
-    """Тест создания списка без авторизации."""
+    """Тест создания списка без авторизации"""
     response = client.post(
         "/api/lists/",
         json={
@@ -60,8 +60,7 @@ def test_create_list_unauthorized(client):
 
 
 def test_get_list(client, auth_token):
-    """Тест получения списка по ID."""
-    # Создаем список
+    """Тест получения списка по ID"""
     create_response = client.post(
         "/api/lists/",
         json={
@@ -80,14 +79,13 @@ def test_get_list(client, auth_token):
 
 
 def test_get_list_not_found(client):
-    """Тест получения несуществующего списка."""
+    """Тест получения несуществующего списка"""
     response = client.get("/api/lists/99999")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_update_list(client, auth_token):
-    """Тест обновления списка."""
-    # Создаем список
+    """Тест обновления списка"""
     create_response = client.post(
         "/api/lists/",
         json={
@@ -113,7 +111,7 @@ def test_update_list(client, auth_token):
 
 
 def test_delete_list(client, auth_token):
-    """Тест удаления списка."""
+    """Тест удаления списка"""
     # Создаем список
     create_response = client.post(
         "/api/lists/",
@@ -138,7 +136,7 @@ def test_delete_list(client, auth_token):
 
 
 def test_add_movies_to_list(client, auth_token, test_movie):
-    """Тест добавления фильмов в список."""
+    """Тест добавления фильмов в список"""
     # Создаем список
     create_response = client.post(
         "/api/lists/",
@@ -163,7 +161,7 @@ def test_add_movies_to_list(client, auth_token, test_movie):
 
 
 def test_remove_movies_from_list(client, auth_token, test_movie):
-    """Тест удаления фильмов из списка."""
+    """Тест удаления фильмов из списка"""
     # Создаем список и добавляем фильм
     create_response = client.post(
         "/api/lists/",

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-
 from app.api import deps
 from app.services.admin_stats import AdminStatsService
 
@@ -14,7 +13,7 @@ def get_service(db: Session = Depends(deps.get_db)) -> AdminStatsService:
 @router.get("/status")
 async def status(service: AdminStatsService = Depends(get_service)):
     """
-    /status - Проверка состояния всех сервисов (backend, db, frontend).
+    /status - Проверка состояния всех сервисов (backend, db, frontend)
     """
     return await service.get_status()
 
@@ -22,7 +21,7 @@ async def status(service: AdminStatsService = Depends(get_service)):
 @router.get("/db_check")
 def db_check(service: AdminStatsService = Depends(get_service)):
     """
-    /db_check - Проверка подключения к базе данных и базовая статистика.
+    /db_check - Проверка подключения к базе данных и базовая статистика
     """
     return service.get_db_check()
 
@@ -33,7 +32,7 @@ def logs_errors(
     service: AdminStatsService = Depends(get_service),
 ):
     """
-    /logs_errors - Последние критические ошибки из логов бэкенда.
+    /logs_errors - Последние критические ошибки из логов бэкенда
     """
     return service.get_last_errors(limit=limit)
 
@@ -44,7 +43,7 @@ def top_movies(
     service: AdminStatsService = Depends(get_service),
 ):
     """
-    /top_movies - Топ-10 фильмов по просмотрам за период (24h или 7d).
+    /top_movies - Топ-10 фильмов по просмотрам за период (24h или 7d)
     """
     return service.get_top_movies(period=period)
 
@@ -52,7 +51,7 @@ def top_movies(
 @router.get("/new_reviews")
 def new_reviews(service: AdminStatsService = Depends(get_service)):
     """
-    /new_reviews - Количество новых отзывов/рейтингов за сегодня.
+    /new_reviews - Количество новых отзывов/рейтингов за сегодня
     """
     return service.get_new_reviews_today()
 
@@ -60,7 +59,7 @@ def new_reviews(service: AdminStatsService = Depends(get_service)):
 @router.get("/search_stats_none")
 def search_stats_none(service: AdminStatsService = Depends(get_service)):
     """
-    /search_stats_none - Топ-5 популярных поисков, которые не дали результатов.
+    /search_stats_none - Топ-5 популярных поисков, которые не дали результатов
     """
     return service.get_search_stats_none()
 
@@ -68,7 +67,7 @@ def search_stats_none(service: AdminStatsService = Depends(get_service)):
 @router.get("/top_search")
 def top_search(service: AdminStatsService = Depends(get_service)):
     """
-    /top_search - Топ-5 самых популярных поисковых запросов.
+    /top_search - Топ-5 самых популярных поисковых запросов
     """
     return service.get_top_search()
 
@@ -76,7 +75,7 @@ def top_search(service: AdminStatsService = Depends(get_service)):
 @router.get("/top_pages")
 def top_pages(service: AdminStatsService = Depends(get_service)):
     """
-    /top_pages - Топ-10 самых посещаемых страниц.
+    /top_pages - Топ-10 самых посещаемых страниц
     """
     return service.get_top_pages()
 
@@ -84,7 +83,7 @@ def top_pages(service: AdminStatsService = Depends(get_service)):
 @router.get("/new_users")
 def new_users(service: AdminStatsService = Depends(get_service)):
     """
-    /new_users - Кол-во новых регистраций за сегодня и за неделю.
+    /new_users - Кол-во новых регистраций за сегодня и за неделю
     """
     return service.get_new_users()
 
@@ -92,7 +91,7 @@ def new_users(service: AdminStatsService = Depends(get_service)):
 @router.get("/active_users")
 def active_users(service: AdminStatsService = Depends(get_service)):
     """
-    /active_users - Кол-во активных пользователей за последние 7 дней.
+    /active_users - Кол-во активных пользователей за последние 7 дней
     """
     return service.get_active_users()
 
@@ -103,7 +102,7 @@ def user_stats(
     service: AdminStatsService = Depends(get_service),
 ):
     """
-    /user_stats [ID] - Сводная статистика по пользователю.
+    /user_stats [ID] - Сводная статистика по пользователю
     """
     try:
         return service.get_user_stats(user_id)
@@ -114,7 +113,7 @@ def user_stats(
 @router.get("/full_report")
 async def full_report(service: AdminStatsService = Depends(get_service)):
     """
-    /full_report - Комплексный отчёт по основным метрикам.
+    /full_report - Комплексный отчёт по основным метрикам
     """
     return await service.get_full_report()
 
@@ -122,7 +121,7 @@ async def full_report(service: AdminStatsService = Depends(get_service)):
 @router.get("/ai_report")
 async def ai_report(service: AdminStatsService = Depends(get_service)):
     """
-    /ai_report - Анализ полного отчёта с помощью LLM.
+    /ai_report - Анализ полного отчёта с помощью LLM
     """
     answer = await service.get_ai_report()
     print(answer)

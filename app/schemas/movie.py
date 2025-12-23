@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 from datetime import date
-from typing import Optional, Any
+from typing import Optional
+
+
 class MovieBase(BaseModel):
     kp_id: int = Field(..., description="ID фильма из Кинопоиска")
     title: str = Field(..., description="Название фильма (Русское)")
@@ -30,6 +32,7 @@ class MovieBase(BaseModel):
     world_premiere: Optional[date] = None
     combined_rating: Optional[float] = 0.0
 
+
 class MovieUpdate(BaseModel):
     title: Optional[str] = None
     year: Optional[int] = None
@@ -37,14 +40,15 @@ class MovieUpdate(BaseModel):
     description: Optional[str] = None
     poster_url: Optional[str] = None
 
+
 class MovieResponse(MovieBase):
     id: int
-    
+
     class Config:
         from_attributes = True
 
-class MovieSearchFilters(BaseModel):
 
+class MovieSearchFilters(BaseModel):
     query: Optional[str] = None
     genre: Optional[str] = None
     year_from: Optional[int] = None

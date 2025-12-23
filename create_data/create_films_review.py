@@ -61,9 +61,8 @@ class prompter:
 def add_to_csv_file_safe(result_data: List[str], part_title: str, information_ans: str) -> bool:
     """
     Проверяет совпадение заголовков и записывает данные в CSV файл,
-    используя модуль csv.
+    используя модуль csv
     """
-    # Сравнение названий
     title_from_response = result_data[0].strip()
     title_from_request = part_title.strip()
 

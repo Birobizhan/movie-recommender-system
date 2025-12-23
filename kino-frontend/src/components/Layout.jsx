@@ -6,8 +6,11 @@ import Footer from './Footer';
 const Layout = () => {
   return (
     <>
+      {/* Шапка сайта */}
       <Header />
-      <Outlet /> {/* Здесь будут меняться страницы */}
+      <Outlet />
+      
+      {/* Подвал сайта */}
       <Footer />
     </>
   );

@@ -1,8 +1,6 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from app.api import deps
 from app.models.user import User
 from app.schemas.review import ReviewResponse, ReviewCreate, ReviewUpdate
@@ -17,6 +15,7 @@ def create_review(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Ёндпоинт дл€ создани€ отзыва на фильм"""
     try:
         service = ReviewService(db)
         return service.create_review(review, current_user)
@@ -33,6 +32,7 @@ def update_review(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Ёндпоинт дл€ обновлени€ отзыва"""
     try:
         service = ReviewService(db)
         return service.update_review(review_id, review_update, current_user)
@@ -48,6 +48,7 @@ def delete_review(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Ёндпоинт дл€ удалени€ отзыва"""
     try:
         service = ReviewService(db)
         service.delete_review(review_id, current_user)
@@ -60,11 +61,13 @@ def delete_review(
 
 @router.get("/movie/{movie_id}", response_model=List[ReviewResponse])
 def get_movie_reviews(movie_id: int, skip: int = 0, limit: int = 50, db: Session = Depends(deps.get_db)):
+    """Ёндпоинт дл€ получени€ отзывов на фильм"""
     service = ReviewService(db)
     return service.list_movie_reviews(movie_id, skip=skip, limit=limit)
 
 
 @router.get("/user/{user_id}", response_model=List[ReviewResponse])
 def get_user_reviews(user_id: int, skip: int = 0, limit: int = 50, db: Session = Depends(deps.get_db)):
+    """Ёндпоинт дл€ получени€ всех отзывов пользовател€"""
     service = ReviewService(db)
     return service.list_user_reviews(user_id, skip=skip, limit=limit)

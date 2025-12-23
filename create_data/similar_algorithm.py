@@ -2,11 +2,10 @@ import pandas as pd
 import os
 import re
 
-# Ожидаемое количество колонок в данных
 EXPECTED_COLUMNS = 10
 
 def is_excel_file(file_path):
-    """Проверяет, является ли файл Excel-файлом по сигнатуре"""
+    """Проверяет, является ли файл Excel-файлом"""
     try:
         with open(file_path, 'rb') as f:
             signature = f.read(4)

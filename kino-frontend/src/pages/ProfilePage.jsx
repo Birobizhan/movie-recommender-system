@@ -112,7 +112,6 @@ const ProfilePage = () => {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Профиль</h1>
 
-        {/* Шапка профиля с метриками */}
         <div style={{
           backgroundColor: '#15151a',
           padding: '1.75rem',
@@ -158,7 +157,7 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Любимые жанры */}
+
         {profile.favorite_genres && profile.favorite_genres.length > 0 && (
           <div style={{
             backgroundColor: '#15151a',
@@ -190,7 +189,6 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Последние просмотренные фильмы */}
         {profile.recent_watched_movies && profile.recent_watched_movies.length > 0 && (
           <div style={{
             backgroundColor: '#15151a',
@@ -276,7 +274,6 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Форма смены пароля */}
         <div style={{
           backgroundColor: '#15151a',
           padding: '1.5rem',

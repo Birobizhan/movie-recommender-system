@@ -4,7 +4,7 @@ from fastapi import status
 
 @pytest.fixture
 def auth_token(client, test_user_data):
-    """Фикстура для получения токена авторизации."""
+    """Фикстура для получения токена авторизации"""
     client.post("/api/users/register", json=test_user_data)
     login_response = client.post(
         "/api/users/login",
@@ -18,7 +18,7 @@ def auth_token(client, test_user_data):
 
 @pytest.fixture
 def test_movie(client, db, test_movie_data):
-    """Создает тестовый фильм в БД напрямую."""
+    """Создает тестовый фильм в БД напрямую"""
     from app.models.movie import Movie
     
     # Убираем genres из данных, так как SQLite не поддерживает ARRAY
@@ -31,7 +31,7 @@ def test_movie(client, db, test_movie_data):
 
 
 def test_create_review(client, auth_token, test_movie):
-    """Тест создания отзыва."""
+    """Тест создания отзыва"""
     response = client.post(
         "/api/reviews/",
         json={
@@ -51,7 +51,7 @@ def test_create_review(client, auth_token, test_movie):
 
 
 def test_create_review_unauthorized(client, test_movie):
-    """Тест создания отзыва без авторизации."""
+    """Тест создания отзыва без авторизации"""
     response = client.post(
         "/api/reviews/",
         json={
@@ -63,7 +63,7 @@ def test_create_review_unauthorized(client, test_movie):
 
 
 def test_get_movie_reviews(client, auth_token, test_movie):
-    """Тест получения отзывов фильма."""
+    """Тест получения отзывов фильма"""
     # Создаем отзыв
     client.post(
         "/api/reviews/",
@@ -84,7 +84,7 @@ def test_get_movie_reviews(client, auth_token, test_movie):
 
 
 def test_update_review(client, auth_token, test_movie):
-    """Тест обновления отзыва."""
+    """Тест обновления отзыва"""
     # Создаем отзыв
     create_response = client.post(
         "/api/reviews/",
@@ -113,7 +113,7 @@ def test_update_review(client, auth_token, test_movie):
 
 
 def test_delete_review(client, auth_token, test_movie):
-    """Тест удаления отзыва."""
+    """Тест удаления отзыва"""
     # Создаем отзыв
     create_response = client.post(
         "/api/reviews/",

@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.api import deps
 from app.models.user import User
-from app.schemas.user import UserBase, UserCreate, UserResponse, UserProfile, UserProfileExtended, UserLogin, Token, UserUpdate, UserPasswordUpdate, PasswordResetRequest, PasswordResetConfirm
+from app.schemas.user import UserCreate, UserResponse, UserProfile, UserProfileExtended, UserLogin, Token, UserUpdate, UserPasswordUpdate, PasswordResetRequest, PasswordResetConfirm
 from app.services import UserService
 from app.repositories import UserRepository
 from app.models.review import Review
@@ -14,6 +13,8 @@ router = APIRouter(tags=["Users"])
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(deps.get_db)):
+    """Эндпоинт для регистрации пользователя"""
+
     try:
         service = UserService(db)
         return service.register_user(user)
@@ -23,6 +24,8 @@ def register_user(user: UserCreate, db: Session = Depends(deps.get_db)):
 
 @router.post("/login", response_model=Token)
 def login_user(user_data: UserLogin, db: Session = Depends(deps.get_db)):
+    """Эндпоинт для авторизации пользователя"""
+
     try:
         service = UserService(db)
         result = service.login_user(user_data)
@@ -34,9 +37,9 @@ def login_user(user_data: UserLogin, db: Session = Depends(deps.get_db)):
 @router.post("/forgot-password")
 def forgot_password(reset_request: PasswordResetRequest, db: Session = Depends(deps.get_db)):
     """
-    Запрос на сброс пароля.
-    В реальном приложении здесь должна быть отправка email с токеном.
-    Для демонстрации возвращаем токен в ответе.
+    Запрос на сброс пароля
+    В реальном приложении здесь должна быть отправка email с токеном
+    Для демонстрации возвращаем токен в ответе
     """
     try:
         service = UserService(db)
@@ -49,7 +52,7 @@ def forgot_password(reset_request: PasswordResetRequest, db: Session = Depends(d
 @router.post("/reset-password")
 def reset_password(reset_confirm: PasswordResetConfirm, db: Session = Depends(deps.get_db)):
     """
-    Установка нового пароля по токену сброса.
+    Установка нового пароля по токену сброса
     """
     try:
         service = UserService(db)
@@ -74,7 +77,7 @@ def get_current_user_profile(
 ):
     """
     Получает расширенный профиль текущего пользователя с последними просмотренными фильмами
-    и любимыми жанрами.
+    и любимыми жанрами
     """
     try:
         service = UserService(db)
@@ -109,8 +112,8 @@ def update_current_user_profile(
     db: Session = Depends(deps.get_db),
 ):
     """
-    Обновление своего профиля (email, username).
-    Пользователь может обновлять только свой профиль.
+    Обновление своего профиля (email, username)
+    Пользователь может обновлять только свой профиль
     """
     try:
         service = UserService(db)
@@ -126,8 +129,8 @@ def update_current_user_password(
     db: Session = Depends(deps.get_db),
 ):
     """
-    Изменение пароля текущего пользователя.
-    Требует старый пароль для подтверждения.
+    Изменение пароля текущего пользователя
+    Требует старый пароль для подтверждения
     """
     try:
         service = UserService(db)
@@ -168,8 +171,8 @@ def update_user_profile(
     db: Session = Depends(deps.get_db),
 ):
     """
-    Обновление профиля пользователя администратором.
-    Админ может обновлять профили любых пользователей.
+    Обновление профиля пользователя администратором
+    Админ может обновлять профили любых пользователей
     """
     try:
         service = UserService(db)

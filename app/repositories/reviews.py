@@ -1,7 +1,5 @@
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
-
 from app.models.review import Review
 
 
@@ -56,18 +54,3 @@ class ReviewRepository:
     def delete_review(self, review: Review) -> None:
         self.db.delete(review)
         self.db.commit()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

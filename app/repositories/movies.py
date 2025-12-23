@@ -1,5 +1,4 @@
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, TEXT
 
@@ -25,7 +24,6 @@ class MovieRepository:
         query = self.db.query(Movie)
 
         if genre:
-            # жанры в БД хранятся в массиве строк (часто в нижнем регистре) — делаем case-insensitive поиск
             if hasattr(Movie, "genres"):
                 query = query.filter(
                     func.lower(cast(Movie.genres, TEXT)).like(f"%{genre.lower()}%")
@@ -58,7 +56,6 @@ class MovieRepository:
             elif sort_by == "votes" and sum_votes is not None:
                 query = query.order_by(sum_votes.desc())
             else:
-                # default or sort_by == "rating"
                 if combined is not None:
                     query = query.order_by(combined.desc(), sum_votes.desc() if sum_votes is not None else None)
 
@@ -86,10 +83,8 @@ class MovieRepository:
         return self.db.query(Movie).filter(Movie.kp_id == kp_id).first()
 
     def get_similar_movies(self, movie: Movie, limit: int = 10) -> List[Movie]:
-        """Get similar movies from movie_similarities table, fallback to genre-based if no similarities found."""
         from app.models.movie import movie_similarities
         
-        # First, try to get from movie_similarities table
         similar_ids = (
             self.db.query(movie_similarities.c.similar_movie_id)
             .filter(movie_similarities.c.movie_id == movie.id)
@@ -98,20 +93,16 @@ class MovieRepository:
         )
         
         if similar_ids:
-            # Extract IDs from tuples
             ids = [row[0] for row in similar_ids]
             similar_movies = (
                 self.db.query(Movie)
                 .filter(Movie.id.in_(ids))
                 .all()
             )
-            # Preserve order from similarities table
             id_to_movie = {m.id: m for m in similar_movies}
             return [id_to_movie[id] for id in ids if id in id_to_movie]
         
-        # Fallback to genre-based similarity if no similarities in table
         if movie.genres:
-            # take first genre string
             first_genre = movie.genres[0] if isinstance(movie.genres, list) else str(movie.genres).split(",")[0].strip()
             query = self.db.query(Movie).filter(
                 Movie.genres.contains([first_genre]) if hasattr(Movie, "genres") else Movie.genre.contains(first_genre),

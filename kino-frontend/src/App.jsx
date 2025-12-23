@@ -11,7 +11,7 @@ import ProfilePage from './pages/ProfilePage';
 import ListsPage from './pages/ListsPage';
 import ListDetailPage from './pages/ListDetailPage';
 import MovieBotPage from './pages/MovieBotPage';
-import './style.css'; // Не забудь положить сюда файл style.css из предыдущего ответа
+import './style.css';
 
 function App() {
   return (
@@ -19,14 +19,21 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
+
           <Route path="movie/:id" element={<MoviePage />} />
+          
+          {/* Страницы аутентификации */}
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
+          
+          {/* Страницы пользователя */}
           <Route path="profile" element={<ProfilePage />} />
           <Route path="lists" element={<ListsPage />} />
           <Route path="lists/:id" element={<ListDetailPage />} />
+          
+          {/* Страница бота-рекомендаций */}
           <Route path="movie-bot" element={<MovieBotPage />} />
         </Route>
       </Routes>

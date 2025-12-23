@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.jwt import verify_token
 from app.repositories.users import UserRepository
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.db.session import get_db
 
 security = HTTPBearer()
@@ -15,8 +15,8 @@ async def get_current_user(
     db: Session = Depends(get_db)
 ) -> User:
     """
-    Получает текущего пользователя из JWT токена.
-    Возвращает объект User или вызывает HTTPException.
+    Получает текущего пользователя из JWT токена
+    Возвращает объект User или вызывает HTTPException
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,8 +44,8 @@ async def get_current_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """
-    Проверяет, что текущий пользователь является администратором.
-    Возвращает объект User или вызывает HTTPException.
+    Проверяет, что текущий пользователь является администратором
+    Возвращает объект User или вызывает HTTPException
     """
     if not current_user.is_admin():
         raise HTTPException(
@@ -60,8 +60,8 @@ async def get_optional_user(
     db: Session = Depends(get_db)
 ) -> User | None:
     """
-    Опционально получает пользователя из токена.
-    Возвращает User если токен валиден, иначе None.
+    Опционально получает пользователя из токена
+    Возвращает User если токен валиден, иначе None
     """
     if credentials is None:
         return None
@@ -75,19 +75,3 @@ async def get_optional_user(
         return user_repo.get_by_username(username)
     except Exception:
         return None
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from starlette.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import traceback
 
 from app.api.routers.users import router as users_router
 from app.api.routers.movies import router as movies_router
@@ -13,7 +12,6 @@ from app.api.routers.reviews import router as reviews_router
 from app.api.routers.lists import router as lists_router
 from app.api.routers.admin_stats import router as admin_stats_router
 from app.api.routers.oauth import router as oauth_router
-
 from app.db.session import get_db
 from app.log_to_db import log_page_view, log_error
 
@@ -26,7 +24,6 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-# ... (Настройка CORS и роутеров остается без изменений) ...
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,10 +49,9 @@ app.include_router(oauth_router, prefix="/api", tags=["OAuth"])
 @app.middleware("http")
 async def log_page_view_middleware(request: Request, call_next: Callable) -> Response:
     """
-    Перехватывает все HTTP-запросы и записывает их в лог.
-    Также логирует ошибки в ErrorLog.
+    Перехватывает все HTTP-запросы и записывает их в лог
+    Также логирует ошибки в ErrorLog
     """
-    # 1. Выполняем запрос (call_next всегда асинхронный)
     try:
         response = await call_next(request)
     except Exception as exc:
@@ -71,7 +67,6 @@ async def log_page_view_middleware(request: Request, call_next: Callable) -> Res
         except Exception as db_exc:
             print(f"Ошибка при записи ошибки в БД: {db_exc}")
         
-        # Пробрасываем исключение дальше для обработки exception handler
         raise
 
     path = request.url.path
@@ -82,17 +77,13 @@ async def log_page_view_middleware(request: Request, call_next: Callable) -> Res
             or path.startswith("/api/docs")
             or path.startswith("/api/openapi.json")
             or path.startswith("/api/redoc")
-            or path == "/api/health"
     ):
         return response
 
-    # 3. Синхронная запись в БД (с использованием генератора get_db)
     try:
-        # Получаем сессию, используя генератор get_db (как в Depends)
         db_generator = get_db()
-        db: Session = next(db_generator)  # Получаем сессию из генератора
+        db: Session = next(db_generator)
 
-        # Выполняем синхронное логирование
         log_page_view(db, request, path)
         try:
             next(db_generator)
@@ -102,21 +93,18 @@ async def log_page_view_middleware(request: Request, call_next: Callable) -> Res
     except Exception as db_exc:
         print(f"Ошибка при записи лога посещения в БД: {db_exc}")
 
-    # 4. Возвращаем ответ
     return response
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """
-    Глобальный обработчик исключений, который логирует все ошибки в БД.
+    Глобальный обработчик исключений, который логирует все ошибки в БД
     """
-    # Логируем ошибку в БД
     try:
         db_generator = get_db()
         db: Session = next(db_generator)
         
-        # Определяем уровень ошибки
         level = "ERROR"
         if isinstance(exc, HTTPException):
             if exc.status_code >= 500:

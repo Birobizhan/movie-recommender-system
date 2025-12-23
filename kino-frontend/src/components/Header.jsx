@@ -15,14 +15,19 @@ const Header = () => {
   }, [location.search]);
 
   useEffect(() => {
+    // Проверяем наличие токена в localStorage (хранилище браузера)
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    
     if (!token) {
+      // Токена нет - пользователь не авторизован
       setMe(null);
       return;
     }
+    
+    // Токен есть - запрашиваем данные пользователя с сервера
     getCurrentUser()
-      .then((resp) => setMe(resp.data))
-      .catch(() => setMe(null));
+      .then((resp) => setMe(resp.data))  // Успешно - сохраняем данные пользователя
+      .catch(() => setMe(null));  // Ошибка (токен невалидный) - сбрасываем
   }, [location.pathname]);
 
   const applySearch = (value) => {

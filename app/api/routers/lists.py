@@ -1,8 +1,6 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.api import deps
 from app.models.user import User
 from app.schemas.list import MovieListResponse, MovieListCreate, MovieListUpdate, MovieListAddRemoveMovies
@@ -17,6 +15,7 @@ def create_list(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Эндпоинт для создания списка пользователем"""
     try:
         service = ListService(db)
         return service.create_list(list_data, current_user)
@@ -30,6 +29,7 @@ def get_list(
     db: Session = Depends(deps.get_db),
     current_user: User | None = Depends(deps.get_optional_user)
 ):
+    """Эндпоинт для получения списка по его id"""
     service = ListService(db)
     db_list = service.get_list(list_id)
     if not db_list:
@@ -52,6 +52,7 @@ def update_list(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Эндпоинт для обновления списка"""
     try:
         service = ListService(db)
         return service.update_list(list_id, list_update, current_user)
@@ -67,6 +68,7 @@ def delete_list(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Эндпоинт для удаления списка"""
     try:
         service = ListService(db)
         service.delete_list(list_id, current_user)
@@ -84,6 +86,8 @@ def add_movies_to_list(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Эндпоинт для добавления фильма в список"""
+
     try:
         service = ListService(db)
         return service.add_movies(list_id, data, current_user)
@@ -100,6 +104,7 @@ def remove_movies_from_list(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(deps.get_db),
 ):
+    """Эндпоинт для удаления фильма из списка"""
     try:
         service = ListService(db)
         return service.remove_movies(list_id, data, current_user)
@@ -111,5 +116,6 @@ def remove_movies_from_list(
 
 @router.get("/user/{user_id}", response_model=List[MovieListResponse])
 def get_user_lists(user_id: int, db: Session = Depends(deps.get_db)):
+    """Эндпоинт для получения всех списков пользователя по id"""
     service = ListService(db)
     return service.get_user_lists(user_id)

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { recommendMovies } from '../api';
 
-// Данные для вопросов
 const FIRST_GENRES = [
   'Драма', 'Комедия', 'Боевик (Экшен)', 'Фантастика', 'Триллер', 'Фэнтези', 
   'Мелодрама', 'Ужасы', 'Детектив', 'Приключения', 'Исторический', 'Криминал', 

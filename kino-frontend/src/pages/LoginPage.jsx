@@ -15,7 +15,6 @@ const LoginPage = () => {
 
   const from = location.state?.from || '/';
 
-  // Обработка OAuth callback
   useEffect(() => {
     const token = searchParams.get('token');
     const success = searchParams.get('success');
@@ -25,23 +24,16 @@ const LoginPage = () => {
 
     if (token && success === 'true') {
       console.log('[OAuth] Token received, length:', token.length);
-      // Декодируем токен, если он был закодирован
       const decodedToken = decodeURIComponent(token);
       console.log('[OAuth] Setting auth token');
-      
-      // Сохраняем токен в localStorage и устанавливаем в axios
       setAuthToken(decodedToken);
       
-      // Проверяем, что токен сохранился
       const savedToken = localStorage.getItem('access_token');
       console.log('[OAuth] Token saved:', savedToken ? 'yes' : 'no', savedToken ? `length: ${savedToken.length}` : '');
       
-      // Очищаем URL параметры
       window.history.replaceState({}, '', '/login');
       
-      // Небольшая задержка, чтобы токен точно сохранился
       setTimeout(() => {
-        // Полная перезагрузка страницы, чтобы Header подхватил токен
         const redirectUrl = from === '/' ? '/' : from;
         console.log('[OAuth] Redirecting to:', redirectUrl);
         window.location.href = redirectUrl;
@@ -55,7 +47,6 @@ const LoginPage = () => {
         'oauth_error': 'Ошибка при авторизации через Yandex',
       };
       setError(errorMessages[oauthError] || 'Ошибка авторизации');
-      // Очищаем URL параметры
       window.history.replaceState({}, '', '/login');
     }
   }, [searchParams, navigate, from]);
@@ -74,7 +65,7 @@ const LoginPage = () => {
       setAuthToken(data.access_token);
       navigate(from, { replace: true });
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Не удалось войти. Проверьте email и пароль.';
+      const msg = err.response?.data?.detail || 'Не удалось войти. Проверьте email и пароль';
       setError(msg);
     } finally {
       setLoading(false);

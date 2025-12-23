@@ -8,7 +8,6 @@ const GENRES = [
   'Криминал', 'Исторический', 'Мелодрама'
 ];
 
-// --- ФУНКЦИЯ ДЛЯ КОМБИНИРОВАННОГО РЕЙТИНГА ---
 const calculateCombinedRating = (movie) => {
     const ratings = [];
 
@@ -29,16 +28,12 @@ const calculateCombinedRating = (movie) => {
 
     const sum = ratings.reduce((a, b) => a + b, 0);
     const average = sum / count;
-
-    // Форматируем до одной цифры после запятой
     return average.toFixed(1);
 };
-// ----------------------------------------------------
 
 
 const getDirectorName = (directorData) => {
     if (!directorData || (Array.isArray(directorData) && directorData.length === 0)) return 'Неизвестен';
-    // directorData уже нормализован до списка строк в БД
     if (Array.isArray(directorData)) {
         const first = directorData[0];
         return typeof first === 'string' ? first : 'Неизвестен';
@@ -49,7 +44,6 @@ const getDirectorName = (directorData) => {
 
 const getMainActors = (personsArray) => {
     if (!personsArray || personsArray.length === 0) return 'Актеры не указаны';
-    // persons уже нормализованы до списка строк в БД
     const actorNames = personsArray.slice(0, 3).map((p) => (typeof p === 'string' ? p : null)).filter(Boolean);
     return actorNames.join(', ') || 'Актеры не указаны';
 };
@@ -100,7 +94,6 @@ const HomePage = () => {
       .then((response) => {
         const list = response.data || [];
         setMovies(list);
-        // если у нас уже есть карта оценок пользователя — оставляем, иначе попытка построить из списка (если сервер вернул reviews)
         if (me && Object.keys(userRatings).length === 0) {
           const ratingsMap = {};
           list.forEach((m) => {
@@ -128,13 +121,10 @@ const HomePage = () => {
     setSearch(qParam);
   }, [searchParams]);
 
-  // Загрузка при изменении применённых фильтров или страницы
   useEffect(() => {
     fetchMovies();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, genre, year, minRating, sortBy, page]);
 
-  // Синхронизация инпутов с применёнными фильтрами при первой загрузке
   useEffect(() => {
     setGenreInput(genre);
     setYearInput(year);
@@ -171,7 +161,6 @@ const HomePage = () => {
         } catch {
           setSeenSet(new Set());
         }
-        // Подтянем свои оценки один раз
         try {
           const reviewsResp = await getUserReviews(resp.data.id);
           const ratingsMap = {};
@@ -279,7 +268,6 @@ const HomePage = () => {
   return (
     <main>
       <div className="page-container">
-        {/* === ОСНОВНОЕ СОДЕРЖИМОЕ (ЛЕВАЯ КОЛОНКА) === */}
         <div className="main-content top-movies">
           <h1>Фильмы</h1>
           <p className="subtitle">
@@ -308,7 +296,6 @@ const HomePage = () => {
                     const displayRank = (page - 1) * pageSize + index + 1;
                     const directorName = getDirectorName(movie.director);
                     const actors = getMainActors(movie.persons);
-                    // Безопасная обработка genres
                     const genres = Array.isArray(movie.genres) ? movie.genres.join(', ') : (movie.genres || '—');
                     const combinedRating = calculateCombinedRating(movie);
                     const inWatchlist = watchlistSet.has(movie.id);
@@ -317,35 +304,29 @@ const HomePage = () => {
 
                     return (
                     <li className="movie-item" key={movie.id}>
-                        {/* 1. Номер (rank) с учётом пагинации */}
                         <span className="rank">{displayRank}</span>
 
-                        {/* 2. Постер */}
                         {movie.poster_url ? (
                             <img
                                 src={movie.poster_url}
                                 alt={movie.title}
                                 className="poster-placeholder"
                                 style={{width: '60px', height: '90px', objectFit: 'cover'}}
-                                // Добавляем обработку ошибки загрузки постера
                                 onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
                             />
                         ) : (
                             <div className="poster-placeholder" style={{width: '60px', height: '90px'}}></div>
                         )}
 
-                        {/* 3. Детали */}
                         <div className="details">
                             <h4>
                                 <Link to={`/movie/${movie.id}`}>
                                     {movie.title || movie.english_title || 'Название неизвестно'}
                                 </Link>
                             </h4>
-                            {/* Мета: Год, Длительность */}
                             <div className="meta">
                                 {movie.year_release || 'N/A'}, {movie.movie_length ? `${movie.movie_length} мин.` : 'N/A'}
                             </div>
-                            {/* Описание/Жанры/Режиссер/Актеры */}
                             <div className="crew">
                                 {genres} | Режиссер: {directorName}
                             </div>
@@ -354,7 +335,6 @@ const HomePage = () => {
                             </div>
                         </div>
 
-                        {/* 4. Рейтинг и кнопки */}
                         <div className="actions">
                           <div className="rating">
                               <span className="rating-value">
@@ -476,7 +456,6 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Сайдбар убран по запросу пользователя */}
       </div>
     </main>
   );

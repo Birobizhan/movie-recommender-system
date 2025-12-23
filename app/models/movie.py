@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional, List
 from app.db.base import Base
 from sqlalchemy import (
-    String, Text, Date, JSON,
+    String, Text, Date,
     Table, Column, Integer, ForeignKey
 )
 from sqlalchemy.dialects.postgresql import ARRAY
